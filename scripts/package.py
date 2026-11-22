@@ -44,7 +44,7 @@ def main():
         with tempfile.TemporaryDirectory(dir=args.output) as staging:
             pending = pathlib.Path(staging) / archive_path.name
             if suffix:
-                with zipfile.ZipFile(pending, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+                with zipfile.ZipFile(pending, "w", zipfile.ZIP_DEFLATED, compresslevel=6, strict_timestamps=False) as archive:
                     for file in sorted(package.rglob("*")):
                         if file.is_file():
                             archive.write(file, file.relative_to(package.parent))
