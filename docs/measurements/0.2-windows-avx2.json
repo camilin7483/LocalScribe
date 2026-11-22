@@ -1,0 +1,99 @@
+{
+  "environment": "Wine 11.22",
+  "threads": 4,
+  "exact_segments": true,
+  "runs": [
+    {
+      "engine": "previous",
+      "language": "es",
+      "seconds": 190.228,
+      "avx2_enabled": false,
+      "system_info": "system_info: n_threads = 4 / 8 | WHISPER : VITISAI = 0 | COREML = 0 | OPENVINO = 0 | CPU : REPACK = 1 |",
+      "segments": [
+        [
+          {
+            "from": 30,
+            "to": 8670
+          },
+          " Buenos días. Esta es una prueba de transcripción local. El equipo revisará los subtítulos y enviará el informe el jueves."
+        ],
+        [
+          {
+            "from": 8670,
+            "to": 11390
+          },
+          " A un activo permanece en este equipo."
+        ]
+      ]
+    },
+    {
+      "engine": "avx2",
+      "language": "es",
+      "seconds": 97.774,
+      "avx2_enabled": true,
+      "system_info": "system_info: n_threads = 4 / 8 | WHISPER : VITISAI = 0 | COREML = 0 | OPENVINO = 0 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | REPACK = 1 |",
+      "segments": [
+        [
+          {
+            "from": 30,
+            "to": 8670
+          },
+          " Buenos días. Esta es una prueba de transcripción local. El equipo revisará los subtítulos y enviará el informe el jueves."
+        ],
+        [
+          {
+            "from": 8670,
+            "to": 11390
+          },
+          " A un activo permanece en este equipo."
+        ]
+      ]
+    },
+    {
+      "engine": "avx2",
+      "language": "en",
+      "seconds": 67.779,
+      "avx2_enabled": true,
+      "system_info": "system_info: n_threads = 4 / 8 | WHISPER : VITISAI = 0 | COREML = 0 | OPENVINO = 0 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | REPACK = 1 |",
+      "segments": [
+        [
+          {
+            "from": 0,
+            "to": 8220
+          },
+          " Good morning, this is a test on local transcription, our team will review the subtitles and deliver the report on Thursday."
+        ],
+        [
+          {
+            "from": 8220,
+            "to": 10230
+          },
+          " There are no stays on this computer."
+        ]
+      ]
+    },
+    {
+      "engine": "previous",
+      "language": "en",
+      "seconds": 68.793,
+      "avx2_enabled": false,
+      "system_info": "system_info: n_threads = 4 / 8 | WHISPER : VITISAI = 0 | COREML = 0 | OPENVINO = 0 | CPU : REPACK = 1 |",
+      "segments": [
+        [
+          {
+            "from": 0,
+            "to": 8220
+          },
+          " Good morning, this is a test on local transcription, our team will review the subtitles and deliver the report on Thursday."
+        ],
+        [
+          {
+            "from": 8220,
+            "to": 10230
+          },
+          " There are no stays on this computer."
+        ]
+      ]
+    }
+  ]
+}

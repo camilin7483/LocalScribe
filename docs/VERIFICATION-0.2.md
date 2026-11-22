@@ -17,4 +17,10 @@ axe-core 4.14.1 señaló una diferencia entre el texto visible y el nombre acces
 
 ## Plataformas
 
-La alfa local usa los motores CPU portables verificados en la 0.1. El protocolo persistente y Vulkan se prueban con compilaciones explícitas del código fuente. Los instaladores nativos de Windows 10 y 11, el escritorio de Ubuntu en una instalación limpia, una ejecución del workflow publicado y la firma de distribución requieren sus entornos de prueba.
+| Distribución local | Control ejecutado |
+|---|---|
+| Linux x86-64 | Extraje el tarball y ejecuté la aplicación estática en Arch. Pasaron Chromium, los cuatro análisis axe-core, FFmpeg, Whisper y la edición y exportación con la red aislada. |
+| Windows x86-64 | Verifiqué y extraje el ZIP. En Wine 11.22 la aplicación anunció 0.2.0-alpha.1, seleccionó CPU (AVX2) y pasó la transcripción en español con FFmpeg, la validación de tiempos y cinco exportaciones. |
+| Motor de Windows | La compilación previa etiquetada AVX2 ejecutaba instrucciones genéricas. El motor recompilado informa AVX2, FMA y BMI2 en tiempo de ejecución. En dos muestras y cuatro hilos produjo exactamente el mismo texto y los mismos tiempos que el binario previo. [Comparación en Wine](measurements/0.2-windows-avx2.json) |
+
+Los archivos locales de la alfa contienen motores CPU. El protocolo persistente y Vulkan están disponibles en compilaciones de laboratorio desde el código fuente. Quedan pendientes los instaladores nativos de Windows 10 y 11, el escritorio de Ubuntu en una instalación limpia, una ejecución del workflow publicado y la firma de distribución.

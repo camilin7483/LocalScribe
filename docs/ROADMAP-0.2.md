@@ -98,3 +98,11 @@ python scripts/compare_inference_engines.py CORPUS/manifest.json --whisper CLI_C
 
 
 En cuatro grabaciones humanas y dos repeticiones por motor, la mediana fue de 16,557 s para whisper.cpp y 6,468 s para faster-whisper. El WER macro fue 8,24% y 10,41%, respectivamente. La comparación alternó el orden y compartió el equipo con otras tareas. La variante INT8 redujo el tiempo mediano un 61% en este ensayo, con 2,17 puntos porcentuales más de error. La alfa usa whisper.cpp. [Medición por entrada](measurements/0.2-inference-engines.json)
+
+## Resultados de reconocimiento y aceleración
+
+En 24 grabaciones FLEURS, Eco automático con Base Q5_1 redujo el WER macro en español de 19,51% a 7,13% y en inglés de 18,79% a 13,15% frente a Tiny Q5_1. Ambos acertaron el idioma en las 24 grabaciones y completaron las 48 ejecuciones. La prueba reanudó 35 resultados guardados y volvió a comprobar cada archivo con su SHA-256. El ruido, las conversaciones, el cambio de idioma y la representatividad por acento quedan fuera de esta muestra de lectura. [Resultados por grabación](measurements/0.2-fleurs.json)
+
+Vulkan se ejecutó en la Intel ADL GT2. Con la misma compilación y cuatro hilos, la mediana bajó de 56,908 s en CPU a 43,609 s en Vulkan, un 23,4%, y el WER macro pasó de 9,81% a 8,62%. Son ocho ejecuciones por variante sobre cuatro clips y con carga concurrente. La alfa mantiene CPU como configuración predeterminada mientras se valida Vulkan con una sesión larga y recuperación ante fallos. [Medición Vulkan](measurements/0.2-vulkan.json)
+
+Los dos modos completaron la sesión de 30 minutos y guardaron 60 ventanas cada uno. La comparación encontró 173 segmentos idénticos, 39 exclusivos del CLI y 38 del proceso persistente. AutoTune eligió un hilo para el CLI y dos para el proceso persistente, con distinta carga del equipo. El pico estimado de los procesos hijos fue 162 MiB con CLI y 220 MiB con el proceso persistente. La comparación no permite atribuir al worker la diferencia de velocidad. La equivalencia en sesiones largas sigue abierta y el CLI permanece como predeterminado. [Diagnóstico de 30 minutos](measurements/0.2-worker-long-diagnostic.json)

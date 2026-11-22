@@ -1,0 +1,178 @@
+{
+  "revision": "70bb2e84b976b7e960aa89f1c648e09c59f894dd",
+  "engine_sha256": "f4dc56fc5e7fa3d6393d6287a3605c9718145c101ddb77ce62ee3a2a42bc2f2c",
+  "model": "ggml-base-q5_1.bin",
+  "threads": 4,
+  "summary": {
+    "cpu": {
+      "median_seconds": 56.9075,
+      "macro_wer": 0.09806082142475865
+    },
+    "vulkan": {
+      "median_seconds": 43.608999999999995,
+      "macro_wer": 0.08615605951999675
+    }
+  },
+  "runs": [
+    {
+      "trial": 1,
+      "file": "es-1001146817223348054.wav",
+      "sha256": "861ceedc4d50fbe52fc89b6d0c0fa740b9cd6fa668388e754064847386af0faf",
+      "backend": "cpu",
+      "device": "CPU",
+      "seconds": 50.181,
+      "language": "es",
+      "wer": 0.13793103448275862
+    },
+    {
+      "trial": 1,
+      "file": "es-1001146817223348054.wav",
+      "sha256": "861ceedc4d50fbe52fc89b6d0c0fa740b9cd6fa668388e754064847386af0faf",
+      "backend": "vulkan",
+      "device": "Vulkan0",
+      "seconds": 70.581,
+      "language": "es",
+      "wer": 0.13793103448275862
+    },
+    {
+      "trial": 1,
+      "file": "es-10050510856477907332.wav",
+      "sha256": "5b0fcf5b42064d33a36d26dab527cb230b4751587b4066ef11157ea603586d8d",
+      "backend": "vulkan",
+      "device": "Vulkan0",
+      "seconds": 72.747,
+      "language": "es",
+      "wer": 0.058823529411764705
+    },
+    {
+      "trial": 1,
+      "file": "es-10050510856477907332.wav",
+      "sha256": "5b0fcf5b42064d33a36d26dab527cb230b4751587b4066ef11157ea603586d8d",
+      "backend": "cpu",
+      "device": "CPU",
+      "seconds": 148.353,
+      "language": "es",
+      "wer": 0.058823529411764705
+    },
+    {
+      "trial": 1,
+      "file": "en-1003119935936341070.wav",
+      "sha256": "33aca50159ec2e3cbcc894eb26faa916d6badb1b49fb75994973561540a7f012",
+      "backend": "cpu",
+      "device": "CPU",
+      "seconds": 46.186,
+      "language": "en",
+      "wer": 0.05263157894736842
+    },
+    {
+      "trial": 1,
+      "file": "en-1003119935936341070.wav",
+      "sha256": "33aca50159ec2e3cbcc894eb26faa916d6badb1b49fb75994973561540a7f012",
+      "backend": "vulkan",
+      "device": "Vulkan0",
+      "seconds": 42.665,
+      "language": "en",
+      "wer": 0.05263157894736842
+    },
+    {
+      "trial": 1,
+      "file": "en-10052240106321793346.wav",
+      "sha256": "7603cae3294309ef70d234180cefccc3b13865ee525262228a636069b9b62841",
+      "backend": "vulkan",
+      "device": "Vulkan0",
+      "seconds": 32.452,
+      "language": "en",
+      "wer": 0.09523809523809523
+    },
+    {
+      "trial": 1,
+      "file": "en-10052240106321793346.wav",
+      "sha256": "7603cae3294309ef70d234180cefccc3b13865ee525262228a636069b9b62841",
+      "backend": "cpu",
+      "device": "CPU",
+      "seconds": 27.645,
+      "language": "en",
+      "wer": 0.14285714285714285
+    },
+    {
+      "trial": 2,
+      "file": "es-1001146817223348054.wav",
+      "sha256": "861ceedc4d50fbe52fc89b6d0c0fa740b9cd6fa668388e754064847386af0faf",
+      "backend": "vulkan",
+      "device": "Vulkan0",
+      "seconds": 31.851,
+      "language": "es",
+      "wer": 0.13793103448275862
+    },
+    {
+      "trial": 2,
+      "file": "es-1001146817223348054.wav",
+      "sha256": "861ceedc4d50fbe52fc89b6d0c0fa740b9cd6fa668388e754064847386af0faf",
+      "backend": "cpu",
+      "device": "CPU",
+      "seconds": 84.73,
+      "language": "es",
+      "wer": 0.13793103448275862
+    },
+    {
+      "trial": 2,
+      "file": "es-10050510856477907332.wav",
+      "sha256": "5b0fcf5b42064d33a36d26dab527cb230b4751587b4066ef11157ea603586d8d",
+      "backend": "cpu",
+      "device": "CPU",
+      "seconds": 125.706,
+      "language": "es",
+      "wer": 0.058823529411764705
+    },
+    {
+      "trial": 2,
+      "file": "es-10050510856477907332.wav",
+      "sha256": "5b0fcf5b42064d33a36d26dab527cb230b4751587b4066ef11157ea603586d8d",
+      "backend": "vulkan",
+      "device": "Vulkan0",
+      "seconds": 160.376,
+      "language": "es",
+      "wer": 0.058823529411764705
+    },
+    {
+      "trial": 2,
+      "file": "en-1003119935936341070.wav",
+      "sha256": "33aca50159ec2e3cbcc894eb26faa916d6badb1b49fb75994973561540a7f012",
+      "backend": "vulkan",
+      "device": "Vulkan0",
+      "seconds": 44.553,
+      "language": "en",
+      "wer": 0.05263157894736842
+    },
+    {
+      "trial": 2,
+      "file": "en-1003119935936341070.wav",
+      "sha256": "33aca50159ec2e3cbcc894eb26faa916d6badb1b49fb75994973561540a7f012",
+      "backend": "cpu",
+      "device": "CPU",
+      "seconds": 63.634,
+      "language": "en",
+      "wer": 0.05263157894736842
+    },
+    {
+      "trial": 2,
+      "file": "en-10052240106321793346.wav",
+      "sha256": "7603cae3294309ef70d234180cefccc3b13865ee525262228a636069b9b62841",
+      "backend": "cpu",
+      "device": "CPU",
+      "seconds": 47.268,
+      "language": "en",
+      "wer": 0.14285714285714285
+    },
+    {
+      "trial": 2,
+      "file": "en-10052240106321793346.wav",
+      "sha256": "7603cae3294309ef70d234180cefccc3b13865ee525262228a636069b9b62841",
+      "backend": "vulkan",
+      "device": "Vulkan0",
+      "seconds": 19.336,
+      "language": "en",
+      "wer": 0.09523809523809523
+    }
+  ]
+}
