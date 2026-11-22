@@ -77,3 +77,5 @@ python scripts/compare_whisper_devices.py --whisper CLI_VULKAN --model MODEL --v
 El equipo de referencia informa Intel Graphics ADL GT2 con Mesa 26.2.7. El comparador exige que Whisper informe uso efectivo del backend Vulkan en cada prueba GPU. La selección automática queda sujeta a medidas de velocidad y calidad repetibles, memoria, recuperación y pruebas por controlador.
 
 En Chromium con red aislada, 30 búsquedas sobre 3.000 segmentos sintéticos durante una transcripción real de fondo dieron 37,2 ms en p50, 74,8 ms en p95 y 107,5 ms como máximo. La duración va del evento de entrada al segundo frame de animación. Cada muestra esperaba el resultado correcto. Este caso cubre búsqueda en un editor abierto; la apertura inicial, otros equipos y tareas de usuarios requieren medición propia. [Muestras de latencia](measurements/0.2-editor-response.json)
+
+La prueba posterior con silencio digital confirmó dos ventanas inferidas y una omitida en cada modo. CLI, worker persistente y reintento con binario antiguo generaron exactamente los mismos cuatro segmentos con sus marcas de tiempo. [Datos del control de silencio](measurements/0.2-worker-silence.json)

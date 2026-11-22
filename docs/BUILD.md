@@ -61,4 +61,4 @@ python tests/worker.py --binary PATH_TO_LOCALSCRIBE --models .release/models --i
 
 See [0.2 engineering evidence](ROADMAP-0.2.md#inferencias-y-segundo-incremento) for measurement scope and acceptance criteria.
 
-Para compilar un CLI de laboratorio con Vulkan, instala el SDK de Vulkan, `glslc` y la configuración CMake de SPIRV-Headers. Ejecuta `python scripts/build_native.py --vulkan-lab`. Si el SDK está fuera de las rutas del sistema, añade sus prefijos a `CMAKE_PREFIX_PATH`. La herramienta aparece como `whisper-cli-vulkan` dentro del directorio nativo. El empaquetado estándar se compone de las variantes CPU.
+For a Vulkan benchmark CLI, install the Vulkan SDK, `glslc`, and the SPIRV-Headers CMake package. Run `python scripts/build_native.py --vulkan-lab`. For SDKs outside the system paths, include their prefixes in `CMAKE_PREFIX_PATH`. The build places `whisper-cli-vulkan` in the native output directory. Standard packaging contains the CPU variants.

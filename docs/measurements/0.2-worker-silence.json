@@ -1,0 +1,77 @@
+{
+  "media": "speech-silence-speech.wav",
+  "duration_ms": 72946,
+  "exact_segments": true,
+  "segment_count": 4,
+  "runs": [
+    {
+      "mode": "cli",
+      "elapsed_ms": 190812,
+      "threads": 2,
+      "metrics": {
+        "cpu_ms": 225120,
+        "peak_rss_bytes": 167280640,
+        "stages": {
+          "cli_windows": 2,
+          "decode_ms": 382,
+          "fallback_ms": 0,
+          "inference_ms": 184655,
+          "peak_child_tree_estimate_bytes": 167280640,
+          "persistent_windows": 0,
+          "probe_ms": 261,
+          "silence_scan_ms": 13,
+          "silent_windows": 1,
+          "worker_fallbacks": 0
+        },
+        "wall_ms": 185298,
+        "wer": null
+      }
+    },
+    {
+      "mode": "persistent",
+      "elapsed_ms": 44056,
+      "threads": 2,
+      "metrics": {
+        "cpu_ms": 76210,
+        "peak_rss_bytes": 168620032,
+        "stages": {
+          "cli_windows": 0,
+          "decode_ms": 427,
+          "fallback_ms": 0,
+          "inference_ms": 41343,
+          "peak_child_tree_estimate_bytes": 184639488,
+          "persistent_windows": 2,
+          "probe_ms": 138,
+          "silence_scan_ms": 16,
+          "silent_windows": 1,
+          "worker_fallbacks": 0
+        },
+        "wall_ms": 41908,
+        "wer": null
+      }
+    },
+    {
+      "mode": "fallback",
+      "elapsed_ms": 106602,
+      "threads": 1,
+      "metrics": {
+        "cpu_ms": 141080,
+        "peak_rss_bytes": 163151872,
+        "stages": {
+          "cli_windows": 2,
+          "decode_ms": 546,
+          "fallback_ms": 3,
+          "inference_ms": 103893,
+          "peak_child_tree_estimate_bytes": 163151872,
+          "persistent_windows": 0,
+          "probe_ms": 83,
+          "silence_scan_ms": 47,
+          "silent_windows": 1,
+          "worker_fallbacks": 1
+        },
+        "wall_ms": 104522,
+        "wer": null
+      }
+    }
+  ]
+}
