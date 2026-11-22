@@ -1,0 +1,128 @@
+{
+  "hardware": {
+    "adapters": [
+      "Intel Corporation Alder Lake-UP3 GT1 [UHD Graphics]"
+    ],
+    "arch": "x86_64",
+    "available_mib": 7144,
+    "avx2": true,
+    "calibration": [
+      {
+        "million_ops_per_second": 1781.602649874048,
+        "threads": 1
+      },
+      {
+        "million_ops_per_second": 2395.826220071138,
+        "threads": 2
+      },
+      {
+        "million_ops_per_second": 1940.3178193665185,
+        "threads": 4
+      },
+      {
+        "million_ops_per_second": 3229.262006860353,
+        "threads": 6
+      }
+    ],
+    "cpu": "12th Gen Intel(R) Core(TM) i3-1215U",
+    "engine": "CPU (AVX2)",
+    "logical": 8,
+    "physical": 6,
+    "ram_mib": 15656
+  },
+  "sample": "es.wav",
+  "trials": [
+    {
+      "model": "tiny-q5_1",
+      "trial": 1,
+      "profile": "eco",
+      "threads": 2,
+      "audio_ms": 11786,
+      "pipeline_ms": 2912,
+      "elapsed_ms": 3104,
+      "peak_rss_bytes": 108679168,
+      "cpu_ms": 5360,
+      "rtf": 0.2471,
+      "wer": 1.0
+    },
+    {
+      "model": "tiny-q5_1",
+      "trial": 2,
+      "profile": "eco",
+      "threads": 2,
+      "audio_ms": 11786,
+      "pipeline_ms": 4152,
+      "elapsed_ms": 4204,
+      "peak_rss_bytes": 108675072,
+      "cpu_ms": 7360,
+      "rtf": 0.3523,
+      "wer": 1.0
+    },
+    {
+      "model": "base-q5_1",
+      "trial": 1,
+      "profile": "balanced",
+      "threads": 2,
+      "audio_ms": 11786,
+      "pipeline_ms": 10326,
+      "elapsed_ms": 10406,
+      "peak_rss_bytes": 191025152,
+      "cpu_ms": 20630,
+      "rtf": 0.8761,
+      "wer": 0.07692307692307693
+    },
+    {
+      "model": "base-q5_1",
+      "trial": 2,
+      "profile": "balanced",
+      "threads": 2,
+      "audio_ms": 11786,
+      "pipeline_ms": 10944,
+      "elapsed_ms": 11125,
+      "peak_rss_bytes": 191942656,
+      "cpu_ms": 21720,
+      "rtf": 0.9286,
+      "wer": 0.07692307692307693
+    },
+    {
+      "model": "small-q5_1",
+      "trial": 1,
+      "profile": "precision",
+      "threads": 6,
+      "audio_ms": 11786,
+      "pipeline_ms": 16788,
+      "elapsed_ms": 17060,
+      "peak_rss_bytes": 486096896,
+      "cpu_ms": 74390,
+      "rtf": 1.4244,
+      "wer": 0.07692307692307693
+    },
+    {
+      "model": "small-q5_1",
+      "trial": 2,
+      "profile": "precision",
+      "threads": 6,
+      "audio_ms": 11786,
+      "pipeline_ms": 16957,
+      "elapsed_ms": 17280,
+      "peak_rss_bytes": 485851136,
+      "cpu_ms": 83720,
+      "rtf": 1.4387,
+      "wer": 0.07692307692307693
+    }
+  ],
+  "summary": [
+    {
+      "model": "tiny-q5_1",
+      "median_rtf": 0.2997
+    },
+    {
+      "model": "base-q5_1",
+      "median_rtf": 0.9023
+    },
+    {
+      "model": "small-q5_1",
+      "median_rtf": 1.4316
+    }
+  ]
+}

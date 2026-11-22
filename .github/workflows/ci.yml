@@ -1,0 +1,126 @@
+name: Build and verify
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            platform: linux
+            executable: localscribe
+          - runner: windows-2025
+            platform: windows
+            executable: localscribe.exe
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Linux runtime
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Windows runtime
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install ffmpeg --no-progress -y
+      - name: Configure toolchain
+        run: |
+          rustup toolchain install 1.100.0 --profile minimal --component rustfmt --component clippy
+          rustup override set 1.100.0
+      - name: Rust checks
+        run: |
+          cargo fmt --check
+          cargo test --locked
+          cargo clippy --locked --all-targets -- -D warnings
+      - name: Build
+        run: python scripts/build_native.py
+      - name: Frontend audit
+        run: npm --prefix frontend audit --audit-level=high
+      - name: Rust advisory audit
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p .release/audit
+          archive=.release/audit/cargo-audit.tgz
+          curl --fail --location --retry 2 https://github.com/rustsec/rustsec/releases/download/cargo-audit/v0.23.0/cargo-audit-x86_64-unknown-linux-musl-v0.23.0.tgz --output "$archive"
+          printf '%s  %s\n' 4f01c74ed84b2dffd0b1d37012a62cdf2a92c96e25bdf8eec7fcc0d4d3eb7811 "$archive" | sha256sum -c -
+          tar -xzf "$archive" -C .release/audit
+          .release/audit/cargo-audit-x86_64-unknown-linux-musl-v0.23.0/cargo-audit audit --db .release/audit/advisory-db
+      - name: Install test dependencies
+        run: |
+          python -m pip install -r requirements-dev.txt
+          python scripts/fetch_models.py .release/models
+      - name: Chromium on Linux
+        if: runner.os == 'Linux'
+        run: python -m playwright install --with-deps chromium
+      - name: Chromium on Windows
+        if: runner.os == 'Windows'
+        run: python -m playwright install chromium
+      - name: Package
+        run: python scripts/package.py --platform ${{ matrix.platform }} --native .release/native
+      - name: Test the extracted package
+        shell: bash
+        run: |
+          mkdir -p .release/extracted
+          archive=(.release/LocalScribe-*-${{ matrix.platform }}-x86_64.*)
+          if [[ "${{ matrix.platform }}" == "linux" ]]; then
+            tar -xzf "${archive[0]}" -C .release/extracted
+          else
+            python -m zipfile -e "${archive[0]}" .release/extracted
+          fi
+          package=(.release/extracted/LocalScribe-*)
+          python tests/integration.py --binary "${package[0]}/${{ matrix.executable }}" --models .release/models --full
+          python tests/browser.py --binary "${package[0]}/${{ matrix.executable }}" --models .release/models
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: package-${{ matrix.platform }}
+          path: .release/LocalScribe-*-${{ matrix.platform }}-x86_64.*
+          if-no-files-found: error
+
+  draft:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: verify
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: package-*
+          path: release-assets
+          merge-multiple: true
+      - name: Open a draft for the matching version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          version=$(awk -F'"' '/^version = /{print $2; exit}' backend/Cargo.toml)
+          test "$tag" = "v$version"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          cd release-assets
+          sha256sum LocalScribe-* > SHA256SUMS.txt
+          gh release create "$tag" --verify-tag --draft --prerelease --title "LocalScribe $version" --notes-file ../CHANGELOG.md ./*
