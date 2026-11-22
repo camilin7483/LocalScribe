@@ -16,6 +16,7 @@ mod state;
 mod subprocess;
 mod transcribe;
 mod wer;
+mod whisper_worker;
 
 use anyhow::{Context, Result, bail, ensure};
 use directories::ProjectDirs;

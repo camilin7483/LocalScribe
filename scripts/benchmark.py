@@ -38,7 +38,7 @@ def main():
                 metrics = job["metrics"]
                 rows.append({"model": model, "trial": trial, "profile": job["plan"]["profile"], "threads": job["plan"]["threads"],
                              "audio_ms": job["duration_ms"], "pipeline_ms": metrics["wall_ms"],
-                             "elapsed_ms": round((time.monotonic() - started) * 1000),
+                             "elapsed_ms": round((time.monotonic() - started) * 1000), "stages": metrics.get("stages"),
                              "peak_rss_bytes": metrics["peak_rss_bytes"], "cpu_ms": metrics["cpu_ms"],
                              "rtf": round(metrics["wall_ms"] / job["duration_ms"], 4), "wer": metrics["wer"]})
         aggregates = [{"model": model, "median_rtf": round(statistics.median(row["rtf"] for row in rows if row["model"] == model), 4)}

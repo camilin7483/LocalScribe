@@ -140,7 +140,7 @@ def wait_for_resume(server, job_id):
     raise TimeoutError("Cancelled worker did not finish.")
 
 
-def verify_checkpoint(server, directory):
+def verify_checkpoint(server, directory, require_persistent=False):
     path = directory / "ventanas-largas.wav"
     ffmpeg("-stream_loop", "7", "-i", FIXTURES / "es.wav", "-t", "93", "-c:a", "pcm_s16le", path)
     job = server.import_file(path, {**ECO, "language": "es", "benchmark": True})
@@ -148,6 +148,8 @@ def verify_checkpoint(server, directory):
     first = server.wait(job, lambda detail: detail["job"]["status"] == "running" and detail["job"]["processed_ms"] >= 30_000)
     first_ids = [(row["id"], row["start_ms"]) for row in first["segments"]]
     assert first_ids
+    if require_persistent:
+        assert first["job"]["metrics"]["stages"]["persistent_windows"] >= 1
     server.api(route + "/cancel", "POST", expected=204)
     stopped = server.api(route)
     assert stopped["job"]["status"] == "cancelled"

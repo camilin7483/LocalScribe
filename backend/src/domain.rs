@@ -72,6 +72,23 @@ pub struct Metrics {
     pub peak_rss_bytes: u64,
     pub cpu_ms: u64,
     pub wer: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stages: Option<StageMetrics>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[serde(default)]
+pub struct StageMetrics {
+    pub probe_ms: u64,
+    pub silence_scan_ms: u64,
+    pub silent_windows: u64,
+    pub decode_ms: u64,
+    pub inference_ms: u64,
+    pub persistent_windows: u64,
+    pub cli_windows: u64,
+    pub worker_fallbacks: u64,
+    pub fallback_ms: u64,
+    pub peak_child_tree_estimate_bytes: u64,
 }
 
 impl Metrics {

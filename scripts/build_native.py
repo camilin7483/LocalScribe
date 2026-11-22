@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tarfile
 import urllib.request
+from whisper_worker import add_worker
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 VERSION = "1.9.5"
@@ -40,6 +41,17 @@ def retrieve(directory):
     content = common.read_bytes()
     if b"#include <algorithm>" not in content:
         common.write_bytes(b"#include <algorithm>\n" + content)
+    add_worker(source / "examples" / "cli" / "cli.cpp")
+    # Vulkan's generated target uses SPIR-V headers. Propagate the
+    # imported include path when the SDK is installed outside /usr.
+    vulkan = source / "ggml" / "src" / "ggml-vulkan" / "CMakeLists.txt"
+    cmake = vulkan.read_text(encoding="utf-8")
+    original = "target_link_libraries(ggml-vulkan PRIVATE Vulkan::Vulkan)"
+    patched = "target_link_libraries(ggml-vulkan PRIVATE Vulkan::Vulkan SPIRV-Headers::SPIRV-Headers)"
+    if patched not in cmake:
+        if cmake.count(original) != 1:
+            raise RuntimeError("Pinned Vulkan target changed.")
+        vulkan.write_text(cmake.replace(original, patched), encoding="utf-8")
     return source
 
 
@@ -49,6 +61,8 @@ def whisper(source, target, variant, jobs):
         "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=OFF", "-DGGML_NATIVE=OFF",
         "-DGGML_OPENMP=OFF", "-DWHISPER_BUILD_TESTS=OFF", "-DWHISPER_BUILD_SERVER=OFF",
     ]
+    if variant == "vulkan":
+        flags.append("-DGGML_VULKAN=ON")
     if variant == "generic":
         flags += [f"-DGGML_{feature}=OFF" for feature in ("AVX", "AVX2", "SSE42", "F16C", "FMA", "BMI2")]
     if os.name == "nt":
@@ -65,6 +79,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dir", type=pathlib.Path, default=ROOT / ".release")
     parser.add_argument("--jobs", type=int, default=4)
+    parser.add_argument("--vulkan-lab", action="store_true", help="Build an additional Vulkan CLI for benchmarks.")
     args = parser.parse_args()
     build = args.dir.resolve()
     stage = build / "native"
@@ -82,6 +97,9 @@ def main():
         target_name = ("whisper-cli" if variant == "generic" else "whisper-cli-avx2") + EXE
         shutil.copy2(result, stage / target_name)
     shutil.copy2(src / "LICENSE", stage / "whisper.cpp-LICENSE.txt")
+    if args.vulkan_lab:
+        result = whisper(src, build, "vulkan", args.jobs)
+        shutil.copy2(result, stage / ("whisper-cli-vulkan" + EXE))
 
 
 if __name__ == "__main__":

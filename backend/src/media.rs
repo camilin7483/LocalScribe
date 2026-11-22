@@ -298,3 +298,45 @@ pub async fn waveform(
         result = tokio::time::timeout(Duration::from_secs(180), read) => result?,
     }
 }
+
+/// FFmpeg writes PCM in a RIFF data chunk. Unknown layouts go to the engine.
+pub async fn is_digital_silence(path: &Path) -> std::io::Result<bool> {
+    use tokio::io::{AsyncReadExt, AsyncSeekExt};
+    let mut audio = tokio::fs::File::open(path).await?;
+    let len = audio.metadata().await?.len();
+    let mut container = [0; 12];
+    if len < 12 {
+        return Ok(false);
+    }
+    audio.read_exact(&mut container).await?;
+    if &container[..4] != b"RIFF" || &container[8..] != b"WAVE" {
+        return Ok(false);
+    }
+    let mut offset = 12;
+    let mut header = [0; 8];
+    while offset + 8 <= len {
+        audio.read_exact(&mut header).await?;
+        let size = u32::from_le_bytes(header[4..].try_into().unwrap()) as u64;
+        offset += 8;
+        if size > len - offset {
+            return Ok(false);
+        }
+        if &header[..4] == b"data" {
+            let mut remaining = size as usize;
+            let mut buffer = [0_u8; 8192];
+            while remaining > 0 {
+                let count = remaining.min(buffer.len());
+                audio.read_exact(&mut buffer[..count]).await?;
+                if buffer[..count].iter().any(|byte| *byte != 0) {
+                    return Ok(false);
+                }
+                remaining -= count;
+            }
+            return Ok(true);
+        }
+        let skip = size + size % 2;
+        audio.seek(std::io::SeekFrom::Current(skip as i64)).await?;
+        offset += skip;
+    }
+    Ok(false)
+}

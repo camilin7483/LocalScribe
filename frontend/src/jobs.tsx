@@ -2,7 +2,7 @@ import { ArrowRight, FileAudio, FileVideo, Search, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { bytes, errorText, live, request, timestamp } from './api'
 import { useLocale } from './i18n'
-import type { Job, Jobs as JobPage, Metrics } from './types'
+import type { Job, Jobs as JobPage } from './types'
 import { FilesEmpty, JobProgress, PageTitle, StatusPill } from './ui'
 
 export function useJobs(view = '', keepPolling = true) {
@@ -102,11 +102,12 @@ export function JobsView({ view, changed }: { view: ListView; changed: () => voi
   </>
 }
 
-function JobMetrics({ job }: { job: Job; metrics?: Metrics }) {
+function JobMetrics({ job }: { job: Job }) {
   const { t, locale } = useLocale()
   const number = (value: number, digits = 2) => new Intl.NumberFormat(locale, { maximumFractionDigits: digits }).format(value)
   const m = job.metrics
-  return <dl className="benchmark-metrics">
+  const spanish = locale === 'es'
+  return <><dl className="benchmark-metrics">
     <div><dt>{t('model')}</dt><dd>{job.plan.model}</dd></div>
     <div><dt>{t('runtime')}</dt><dd>{number(m.wall_ms / 1000)} s</dd></div>
     <div><dt>{t('rtf')}</dt><dd>{number(m.wall_ms / (job.duration_ms || 1), 3)}×</dd></div>
@@ -114,6 +115,19 @@ function JobMetrics({ job }: { job: Job; metrics?: Metrics }) {
     <div><dt>{t('cpuUsage')}</dt><dd>{m.cpu_ms ? number(100 * m.cpu_ms / m.wall_ms, 1) + '%' : t('none')}</dd></div>
     <div><dt>{t('wer')}</dt><dd>{m.wer === null ? t('none') : number(m.wer * 100, 1) + '%'}</dd></div>
   </dl>
+    {m.stages && <details className="benchmark-stages">
+      <summary>{spanish ? 'Desglose del procesamiento' : 'Processing breakdown'}</summary>
+      <dl className="benchmark-metrics">
+        <div><dt>{spanish ? 'Inspección' : 'Probe'}</dt><dd>{number(m.stages.probe_ms)} ms</dd></div>
+        <div><dt>{spanish ? 'Decodificación' : 'Decode'}</dt><dd>{number(m.stages.decode_ms)} ms</dd></div>
+        <div><dt>{spanish ? 'Inferencia' : 'Inference'}</dt><dd>{number(m.stages.inference_ms)} ms</dd></div>
+        <div><dt>{spanish ? 'Ventanas sin señal' : 'Silent windows'}</dt><dd>{number(m.stages.silent_windows)}</dd></div>
+        <div><dt>{spanish ? 'Ventanas persistentes' : 'Persistent windows'}</dt><dd>{number(m.stages.persistent_windows)}</dd></div>
+        <div><dt>{spanish ? 'Pico estimado de procesos' : 'Estimated process peak'}</dt><dd>{bytes(m.stages.peak_child_tree_estimate_bytes, locale)}</dd></div>
+      </dl>
+      {!!m.stages.worker_fallbacks && <p>{spanish ? 'Reintentos con el motor estándar' : 'Retries with standard engine'} · {m.stages.worker_fallbacks}</p>}
+    </details>}
+  </>
 }
 
 export function PickTranscript({ value, onPick }: { value: string; onPick: (id: string) => void }) {

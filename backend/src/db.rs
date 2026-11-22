@@ -164,10 +164,10 @@ impl Database {
         )? == 1)
     }
 
-    pub fn set_duration(&self, id: &str, duration: i64) -> Result<()> {
+    pub fn record_probe(&self, id: &str, duration: i64, metrics: &Metrics) -> Result<()> {
         self.conn()?.execute(
-            "UPDATE jobs SET duration_ms=?2 WHERE id=?1 AND status='running'",
-            params![id, duration],
+            "UPDATE jobs SET duration_ms=?2,metrics=?3 WHERE id=?1 AND status='running'",
+            params![id, duration, serde_json::to_string(metrics)?],
         )?;
         Ok(())
     }

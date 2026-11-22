@@ -3,7 +3,7 @@ import { useLocale } from './i18n'
 import type { Segment } from './types'
 import { timestamp } from './api'
 
-export function CueReview({ segments, open }: { segments: Segment[]; open: (segment: Segment) => void }) {
+export function CueReview({ segments, active, open }: { segments: Segment[]; active?: Segment; open: (segment: Segment) => void }) {
   const { locale } = useLocale()
   const spanish = locale === 'es'
   const issues = useMemo(() => {
@@ -20,6 +20,10 @@ export function CueReview({ segments, open }: { segments: Segment[]; open: (segm
   }, [segments])
   return <aside className="panel panel-padding studio-review" aria-label={spanish ? 'Revisión de subtítulos' : 'Caption review'}>
     <h2>{spanish ? 'Revisión de subtítulos' : 'Caption review'}</h2>
+    {active?.text && <div className="studio-active-cue">
+      <div><span>{spanish ? 'Subtítulo en reproducción' : 'Current caption'}</span> <time>{timestamp(active.start_ms, true)}</time></div>
+      <p>{active.speaker ? active.speaker + ': ' + active.text : active.text}</p>
+    </div>}
     <p className="hint">{spanish ? 'Velocidad de lectura superior a 20 caracteres por segundo, tiempos inválidos y solapamientos.' : 'Reading speed over 20 characters per second, invalid times and overlaps.'}</p>
     {!issues.length ? <p className="good">{spanish ? 'Sin incidencias detectadas' : 'No issues detected'}</p> :
       <details open>

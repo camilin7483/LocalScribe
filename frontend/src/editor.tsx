@@ -71,13 +71,15 @@ function EditableTranscript({ detail }: { detail: Detail }) {
   const [flash, setFlash] = useState('')
   const [playerError, setPlayerError] = useState('')
   const [playing, setPlaying] = useState(false)
+  const [follow, setFollow] = useState(false)
   const [rate, setRate] = useState(1)
   const [loop, setLoop] = useState<Segment | null>(null)
   const [mediaDuration, setMediaDuration] = useState(job.duration_ms ?? 0)
   const [preview, setPreview] = useState(detail.preview_ready)
   const [preparing, setPreparing] = useState(false)
   const player = useRef<HTMLMediaElement | null>(null)
-  const current = edit.segments.find((segment) => position >= segment.start_ms && position < segment.end_ms)?.id ?? null
+  const activeCue = edit.segments.find((segment) => position >= segment.start_ms && position < segment.end_ms)
+  const current = activeCue?.id ?? null
   const term = query.trim().toLocaleLowerCase(locale)
   const shown = useMemo(() => term ? edit.segments.filter((segment) =>
     [segment.text, segment.speaker ?? '', showOriginal ? segment.original : ''].some((value) =>
@@ -90,6 +92,18 @@ function EditableTranscript({ detail }: { detail: Detail }) {
   const mediaSource = preview ? 'preview' : detail.original_playback ? 'original' : ''
   const source = mediaSource ? '/api/media/' + job.id + '/' + mediaSource : ''
   const isVideo = detail.video && !preview
+
+  useEffect(() => {
+    if (!follow || !playing || current === null) return
+    const focused = document.activeElement
+    if (focused?.closest('.transcript-panel')?.contains(focused) && focused.matches('input, textarea, [contenteditable="true"]')) return
+    const index = shown.findIndex((segment) => segment.id === current)
+    if (index < 0) return
+    setPage(Math.floor(index / SEGMENTS_PER_PAGE))
+    setSelected(null)
+    const frame = requestAnimationFrame(() => document.getElementById('segment-' + current)?.scrollIntoView({ block: 'nearest' }))
+    return () => cancelAnimationFrame(frame)
+  }, [current, follow, playing, shown])
 
   function seek(value: number, segment?: Segment) {
     if (player.current && player.current.readyState >= 1) player.current.currentTime = value / 1000
@@ -159,7 +173,10 @@ function EditableTranscript({ detail }: { detail: Detail }) {
     <PageTitle title={job.name} description={[job.detected_language && languageName(job.detected_language), timestamp(job.duration_ms ?? 0), edit.segments.length + ' ' + t('segments')].filter(Boolean).join(' · ')}
       action={<ExportPicker onExport={(format) => void download(format)}/>}/>
     <section className="panel player-panel" aria-label={t('playback')}>
-      {source && (isVideo ? <video className="video-player" {...playbackProps} controls ref={(node) => { player.current = node }}/> :
+      {source && (isVideo ? <div className="studio-video">
+        <video className="video-player" {...playbackProps} controls ref={(node) => { player.current = node }}/>
+        {activeCue?.text && <div className="studio-video-cue" aria-hidden="true">{activeCue.text}</div>}
+      </div> :
         <audio {...playbackProps} ref={(node) => { player.current = node }}/>)}
       <div className="transport">
         <button className="play-button" onClick={() => void play()} disabled={!source || !!playerError} aria-label={playing ? (locale === 'es' ? 'Pausar' : 'Pause') : (locale === 'es' ? 'Reproducir' : 'Play')}>
@@ -184,6 +201,8 @@ function EditableTranscript({ detail }: { detail: Detail }) {
             const segment = edit.segments.find((item) => item.id === (selected ?? current))
             if (segment) { setLoop(segment); seek(segment.start_ms) }
           }}>{locale === 'es' ? 'Repetir segmento' : 'Loop segment'}{loop ? ' · ' + timestamp(loop.start_ms, true) : ''}</button>
+        <button className="button small secondary" aria-pressed={follow} disabled={!source}
+          onClick={() => setFollow(!follow)}>{locale === 'es' ? 'Seguir reproducción' : 'Follow playback'}</button>
       </div>
       {(!source || playerError) && <div className="preview-note">
         {playerError && <span role="alert" className="inline-error">{playerError}</span>}
@@ -222,7 +241,7 @@ function EditableTranscript({ detail }: { detail: Detail }) {
       <div className="editor-footer" aria-live="polite"><span>{edit.state === 'saved' && <Check size={15}/>} {t(edit.state)}</span>
         {edit.state === 'unsaved' && <button className="button small secondary" onClick={() => void edit.save()}>{t('save')}</button>}</div>
     </section>
-    <CueReview segments={edit.segments} open={(segment) => {
+    <CueReview segments={edit.segments} active={activeCue} open={(segment) => {
       setQuery('')
       setPage(Math.floor(edit.segments.findIndex((item) => item.id === segment.id) / SEGMENTS_PER_PAGE))
       seek(segment.start_ms, segment)

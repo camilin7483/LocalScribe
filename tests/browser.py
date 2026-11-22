@@ -85,6 +85,11 @@ def run(page, server, captures):
     cue.click()
     expected = result["segments"][-1]["start_ms"] / 1000
     assert abs(player.evaluate("(audio) => audio.currentTime") - expected) < 0.15
+    expect(page.locator(".studio-active-cue")).to_contain_text(result["segments"][-1]["text"])
+    follow = page.get_by_role("button", name="Seguir reproducción")
+    follow.click()
+    expect(follow).to_have_attribute("aria-pressed", "true")
+    follow.click()
     loop = page.get_by_role("button", name="Repetir segmento", exact=False)
     loop.click()
     expect(loop).to_have_attribute("aria-pressed", "true")

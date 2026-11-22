@@ -375,3 +375,10 @@ progress::-moz-progress-bar, meter::-moz-meter-bar { background: var(--mint); }
 .studio-review .good { font-size: .8rem; }
 @media (max-width: 1050px) { .studio-workbench { grid-template-columns: minmax(0, 1fr); } }
 .studio-page { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 5px; font-size: .8rem; color: var(--soft); }
+.studio-active-cue { padding: 10px; border-inline-start: 2px solid var(--mint); border-radius: 4px; background: var(--bg); overflow-wrap: anywhere; }
+.studio-active-cue > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px; font-size: .72rem; color: var(--muted); }
+.studio-active-cue p { margin-top: 7px; font-size: .85rem; }
+.studio-video { position: relative; }
+.studio-video-cue { position: absolute; bottom: 46px; left: 50%; transform: translateX(-50%); max-width: 82%; width: max-content; padding: 4px 9px; text-align: center; background: #10151deb; color: #e9eff4; border-radius: 4px; pointer-events: none; overflow-wrap: anywhere; }
+.benchmark-stages { border-top: 1px solid var(--line); margin-top: 7px; padding: 8px 0 0; color: var(--muted); font-size: .75rem; }
+.benchmark-stages summary { width: fit-content; cursor: pointer; color: var(--text); }

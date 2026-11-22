@@ -53,3 +53,27 @@ python scripts/compare_whisper_context.py --whisper PATH_WHISPER --model PATH_BA
 ```
 
 Siguiente entrega de ingeniería: instrumentar tiempos de preparación, búsqueda y decodificación de FFmpeg, inferencia y persistencia por ventana. Probar un worker con contexto reutilizable aislado y someterlo a reinicios, cancelación y ventanas sin habla. Comparar una sesión de 30 minutos antes de activar un backend por defecto.
+
+## Inferencias y segundo incremento
+
+La compilación nativa añade un protocolo de un byte en tuberías privadas al CLI verificado de whisper.cpp. El contexto vive durante el trabajo de varias ventanas. El orquestador mantiene los checkpoints por ventana y reintenta con CLI aislado si falla el proceso persistente. El modo se activa con `LOCALSCRIBE_WHISPER_PERSISTENT=1`; la ruta predeterminada sigue siendo el CLI aislado.
+
+En la comparación end-to-end de 72,946 s, ambos modos devolvieron el mismo texto y tiempos. El aislado tardó 24,980 s y el persistente 25,535 s. El pico estimado de los procesos hijos subió de 158,1 a 195,9 MiB. Había compilación y otras pruebas en el mismo equipo. Esta corrida de diagnóstico no justifica habilitar el modo como predeterminado. Un binario sin el protocolo volvió al CLI automáticamente y produjo la misma salida. La prueba de 93 s canceló el trabajo, reinició el servidor y reanudó con las marcas ya guardadas intactas. [Medición de la sesión corta](measurements/0.2-worker-short.json)
+
+El editor añade seguimiento opcional con protección del campo que tiene foco, subtítulo activo en el panel y superposición sobre video. Los tiempos de inspección, decodificación e inferencia se guardan como métricas opcionales compatibles con trabajos anteriores. Las nuevas métricas distinguen ventanas persistentes, ventanas aisladas, silencios digitales exactos y reintentos. El pico combinado es una estimación construida con la muestra del worker inactivo y el pico del decodificador. El proceso principal y el navegador quedan fuera de esa cifra.
+
+### Corpus y comparación de dispositivos
+
+La muestra humana usa 12 grabaciones distintas de cada partición de prueba `es_419` y `en_us` de FLEURS. El script fija la revisión y registra el SHA‑256 de cada archivo. FLEURS contiene lectura de frases. La sesión larga construida a partir de varias lecturas mide rendimiento y equivalencia, con pausas introducidas y secuencias repetidas. El corpus necesita entrevistas, voces mezcladas, ruido y grabaciones humanas largas independientes para cerrar todas las puertas. [Google Research](https://research.google/pubs/fleurs-few-shot-learning-evaluation-of-universal-representations-of-speech/) · [FLEURS, CC BY 4.0](https://huggingface.co/datasets/google/fleurs/tree/70bb2e84b976b7e960aa89f1c648e09c59f894dd)
+
+```sh
+python scripts/fetch_fleurs.py CORPUS
+python scripts/evaluate_corpus.py --binary APP --models MODELS CORPUS/manifest.json
+python scripts/prepare_corpus_session.py CORPUS/manifest.json SESSION.flac --seconds 1800
+python tests/worker.py --binary APP --models MODELS --media SESSION.flac --timeout 2400
+python scripts/compare_whisper_devices.py --whisper CLI_VULKAN --model MODEL --vad SILERO CORPUS/manifest.json
+```
+
+El equipo de referencia informa Intel Graphics ADL GT2 con Mesa 26.2.7. El comparador exige que Whisper informe uso efectivo del backend Vulkan en cada prueba GPU. La selección automática queda sujeta a medidas de velocidad y calidad repetibles, memoria, recuperación y pruebas por controlador.
+
+En Chromium con red aislada, 30 búsquedas sobre 3.000 segmentos sintéticos durante una transcripción real de fondo dieron 37,2 ms en p50, 74,8 ms en p95 y 107,5 ms como máximo. La duración va del evento de entrada al segundo frame de animación. Cada muestra esperaba el resultado correcto. Este caso cubre búsqueda en un editor abierto; la apertura inicial, otros equipos y tareas de usuarios requieren medición propia. [Muestras de latencia](measurements/0.2-editor-response.json)

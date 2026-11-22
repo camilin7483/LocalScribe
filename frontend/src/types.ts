@@ -22,7 +22,14 @@ export type System = {
   diagnostics: Record<'ffmpeg' | 'ffprobe' | 'whisper', boolean>; upload_limit: number
   counts: { files: number; completed: number; active: number }; languages: string[]
 }
-export type Metrics = { wall_ms: number; peak_rss_bytes: number; cpu_ms: number; wer: number | null }
+export type Metrics = {
+  wall_ms: number; peak_rss_bytes: number; cpu_ms: number; wer: number | null
+  stages?: {
+    probe_ms: number; decode_ms: number; inference_ms: number; silence_scan_ms: number
+    silent_windows: number; persistent_windows: number; cli_windows: number; worker_fallbacks: number
+    fallback_ms: number; peak_child_tree_estimate_bytes: number
+  }
+}
 export type Job = {
   id: string; name: string; bytes: number; status: Status; created_at: number; duration_ms: number | null
   processed_ms: number; detected_language: string | null; error: string | null

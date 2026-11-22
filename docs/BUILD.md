@@ -48,3 +48,17 @@ The GitHub Actions workflow builds and smokes the packages on Ubuntu and Windows
 ## Toolchains for the accompanying local artifacts
 
 The Linux archive uses an official Rust 1.100.0 x86-64 musl target and CPU whisper.cpp linked statically using Zig 0.15.2. The Windows ZIP uses the official Rust 1.100.0 gnullvm target and LLVM-MinGW UCRT 20261117. It was smoke-tested with external FFmpeg 9.1 in Wine 11.22. The native CI builds use the Linux runner's system toolchain and Windows MSVC. All variants use the same frontend lockfile, backend lockfile and pinned whisper.cpp source.
+
+### Experimental persistent Whisper worker
+
+The native builder adds a small stdin/stdout protocol to the verified whisper.cpp release. Set `LOCALSCRIBE_WHISPER_PERSISTENT=1` on the LocalScribe process to test it. The app opens one worker for a multi-window job and exchanges a one-byte command and acknowledgment per window through private pipes. A failed worker is terminated and its current window is retried with the standard CLI. SQLite checkpoints still occur after successful windows. The default uses the standard CLI.
+
+To exercise the packaged worker, comparison, and cancellation path:
+
+```sh
+python tests/worker.py --binary PATH_TO_LOCALSCRIBE --models .release/models --interrupt
+```
+
+See [0.2 engineering evidence](ROADMAP-0.2.md#inferencias-y-segundo-incremento) for measurement scope and acceptance criteria.
+
+Para compilar un CLI de laboratorio con Vulkan, instala el SDK de Vulkan, `glslc` y la configuración CMake de SPIRV-Headers. Ejecuta `python scripts/build_native.py --vulkan-lab`. Si el SDK está fuera de las rutas del sistema, añade sus prefijos a `CMAKE_PREFIX_PATH`. La herramienta aparece como `whisper-cli-vulkan` dentro del directorio nativo. El empaquetado estándar se compone de las variantes CPU.
