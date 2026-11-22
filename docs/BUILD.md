@@ -43,7 +43,7 @@ python tests/integration.py --binary PATH_TO_LOCALSCRIBE --models .release/model
 python tests/browser.py --binary PATH_TO_LOCALSCRIBE --models .release/models
 ```
 
-The GitHub Actions workflow builds and smokes the packages on Ubuntu and Windows runners. A version tag such as `v0.1.0` must match the manifest. Passing jobs produce packages and a draft pre-release with checksums. Verify GUI launch and a clean setup on the target operating systems before publishing the draft. [GitHub hosted runner labels](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
+The GitHub Actions workflow builds and smoke-tests the extracted Ubuntu and Windows packages on pushes and pull requests. Version tags and manual runs also test the full format matrix, browser workflow and recovery with both inference modes. A version tag such as `v0.1.0` must match the manifest. Passing jobs produce packages and a draft pre-release with checksums. Verify GUI launch and a clean setup on the target operating systems before publishing the draft. [GitHub hosted runner labels](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
 
 ## Toolchains for the accompanying local artifacts
 

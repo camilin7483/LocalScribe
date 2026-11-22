@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: localscribe-ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v')) }}
+
 jobs:
   verify:
     strategy:
@@ -23,9 +27,10 @@ jobs:
             platform: windows
             executable: localscribe.exe
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 90
+    timeout-minutes: ${{ (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')) && 90 || 25 }}
     env:
-      LOCALSCRIBE_TEST_JOB_TIMEOUT: '900'
+      FULL_VERIFICATION: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
+      LOCALSCRIBE_TEST_JOB_TIMEOUT: ${{ (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')) && '900' || '600' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -69,15 +74,16 @@ jobs:
           printf '%s  %s\n' 4f01c74ed84b2dffd0b1d37012a62cdf2a92c96e25bdf8eec7fcc0d4d3eb7811 "$archive" | sha256sum -c -
           tar -xzf "$archive" -C .release/audit
           .release/audit/cargo-audit-x86_64-unknown-linux-musl-v0.23.0/cargo-audit audit --db .release/audit/advisory-db
-      - name: Install test dependencies
-        run: |
-          python -m pip install -r requirements-dev.txt
-          python scripts/fetch_models.py .release/models
+      - name: Fetch pinned test models
+        run: python scripts/fetch_models.py .release/models
+      - name: Install browser test dependencies
+        if: env.FULL_VERIFICATION == 'true'
+        run: python -m pip install -r requirements-dev.txt
       - name: Chromium on Linux
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && env.FULL_VERIFICATION == 'true'
         run: python -m playwright install --with-deps chromium
       - name: Chromium on Windows
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && env.FULL_VERIFICATION == 'true'
         run: python -m playwright install chromium
       - name: Package
         run: python scripts/package.py --platform ${{ matrix.platform }} --native .release/native --output packages
@@ -105,14 +111,21 @@ jobs:
         env:
           PACKAGE: ${{ steps.extract.outputs.package }}
           EXECUTABLE: ${{ matrix.executable }}
-        run: python -u tests/integration.py --binary "$PACKAGE/$EXECUTABLE" --models .release/models --full
+        run: |
+          mode=--smoke
+          if [[ "$FULL_VERIFICATION" == "true" ]]; then
+            mode=--full
+          fi
+          python -u tests/integration.py --binary "$PACKAGE/$EXECUTABLE" --models .release/models "$mode"
       - name: Verify the browser workflow
+        if: env.FULL_VERIFICATION == 'true'
         shell: bash
         env:
           PACKAGE: ${{ steps.extract.outputs.package }}
           EXECUTABLE: ${{ matrix.executable }}
         run: python -u tests/browser.py --binary "$PACKAGE/$EXECUTABLE" --models .release/models
       - name: Verify persistent inference and recovery
+        if: env.FULL_VERIFICATION == 'true'
         shell: bash
         env:
           PACKAGE: ${{ steps.extract.outputs.package }}

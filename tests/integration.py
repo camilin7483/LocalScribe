@@ -48,13 +48,13 @@ def verify_model_download(server):
     raise TimeoutError("Silero download did not complete in the time allowed.")
 
 
-def verify_language_edit_export(server):
-    reference = (FIXTURES / "es.txt").read_text(encoding="utf-8")
-    imported = server.import_file(FIXTURES / "es.wav", {**BASE, "benchmark": True, "reference": reference})
+def verify_language_edit_export(server, language="es", options=BASE):
+    reference = (FIXTURES / f"{language}.txt").read_text(encoding="utf-8")
+    imported = server.import_file(FIXTURES / f"{language}.wav", {**options, "benchmark": True, "reference": reference})
     result = server.wait(imported)
     job, segments = result["job"], result["segments"]
     assert job["status"] == "completed", job
-    assert job["detected_language"] == "es" and job["processed_ms"] == job["duration_ms"]
+    assert job["detected_language"] == language and job["processed_ms"] == job["duration_ms"]
     assert 0 <= job["metrics"]["wer"] < 0.5, job["metrics"]
     assert job["metrics"]["wall_ms"] > 0 and job["metrics"]["peak_rss_bytes"] > 0
     assert segments and 0 <= segments[0]["start_ms"] < segments[0]["end_ms"] <= job["duration_ms"]
@@ -79,7 +79,7 @@ def verify_language_edit_export(server):
     status, _, body = server.raw("/media/" + job["id"] + "/original", headers={"X-LocalScribe": "1", "Range": "bytes=0-3"})
     assert status == 206 and body == b"RIFF"
     assert any(row["id"] == job["id"] for row in server.api("/jobs?view=history")["jobs"])
-    print("PASS Spanish, timed segments, immutable original, edit revision, playback range, five exports and history", flush=True)
+    print(f"PASS {language}, timed segments, immutable original, edit revision, playback range, five exports and history", flush=True)
     return result
 
 
@@ -219,7 +219,9 @@ def verify_ai(server, proof, use_diarization):
 def main():
     parser = arguments(argparse.ArgumentParser(description=__doc__))
     parser.add_argument("--eco-regression", action="store_true")
-    parser.add_argument("--full", action="store_true", help="All formats, noise and restart/resume test.")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--full", action="store_true", help="All formats, noise and restart/resume test.")
+    mode.add_argument("--smoke", action="store_true", help="A short real Tiny transcription with privacy, editing and export checks.")
     parser.add_argument("--download", action="store_true", help="Exercise a real model download with internet access.")
     parser.add_argument("--ai", action="store_true", help="Exercise the installed Ollama model.")
     parser.add_argument("--diarization", action="store_true", help="Exercise the configured sherpa-onnx CLI with --ai.")
@@ -237,8 +239,10 @@ def main():
                 verify_model_download(server)
             if args.eco_regression:
                 verify_eco_auto(server)
-            proof = verify_language_edit_export(server)
-            if not args.ai_only:
+            language = "en" if args.smoke else "es"
+            options = {**ECO, "language": "en"} if args.smoke else BASE
+            proof = verify_language_edit_export(server, language, options)
+            if not args.ai_only and not args.smoke:
                 verify_media(server, directory, args.full)
                 if args.full:
                     verify_checkpoint(server, directory)
@@ -248,7 +252,7 @@ def main():
                 route = "/jobs/" + proof["job"]["id"]
                 server.api(route + "/segments", "PATCH", {"id": original["id"], "text": original["original"], "speaker": None, "revision": 1})
                 verify_ai(server, proof, args.diarization)
-            print(json.dumps({"sample": "es.wav", "metrics": proof["job"]["metrics"], "hardware": facts["hardware"]}, ensure_ascii=False), flush=True)
+            print(json.dumps({"sample": f"{language}.wav", "metrics": proof["job"]["metrics"], "hardware": facts["hardware"]}, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":
