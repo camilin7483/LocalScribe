@@ -8,7 +8,7 @@ LocalScribe runs audio and video transcription on your computer. Import a record
 
 [![Animated preview of caption timing edits and SRT export](docs/media/demo-preview.gif)](https://github.com/camilin7483/LocalScribe/releases/download/v0.2.0-alpha.1/LocalScribe-Demo-0.2.mp4)
 
-[Watch the full 30-second demo (MP4)](https://github.com/camilin7483/LocalScribe/releases/download/v0.2.0-alpha.1/LocalScribe-Demo-0.2.mp4) · [Download the Windows or Linux prerelease](https://github.com/camilin7483/LocalScribe/releases/tag/v0.2.0-alpha.1)
+[Watch the full 30-second demo (MP4)](https://github.com/camilin7483/LocalScribe/releases/download/v0.2.0-alpha.1/LocalScribe-Demo-0.2.mp4) · [Download the Windows or Linux release](https://github.com/camilin7483/LocalScribe/releases/tag/v0.2.0-alpha.1)
 
 <details>
 <summary>Caption timing and export review screenshots</summary>
@@ -62,8 +62,12 @@ Use the smoke test to exercise the packaged runtime with real recordings. The fu
 
 [Earlier verification](docs/VERIFICATION.md) · [Benchmark methodology](docs/BENCHMARKS.md) · [Demo reproduction](docs/DEMO.md) · [Changelog](CHANGELOG.md)
 
-## Credits
+## Contributors
 
-Project owner and maintainer: [@camilin7483](https://github.com/camilin7483).
+| GitHub account | Role |
+|---|---|
+| [@camilin7483](https://github.com/camilin7483) | Project owner and maintainer |
+
+[GitHub contributor activity](https://github.com/camilin7483/LocalScribe/graphs/contributors)
 
 LocalScribe is licensed under the MIT License. [License](LICENSE) · [Third-party attributions](docs/ATTRIBUTIONS.md)

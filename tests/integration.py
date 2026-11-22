@@ -150,7 +150,10 @@ def wait_for_resume(server, job_id):
 
 def verify_checkpoint(server, directory, require_persistent=False):
     path = directory / "ventanas-largas.wav"
-    ffmpeg("-stream_loop", "7", "-i", FIXTURES / "es.wav", "-t", "93", "-c:a", "pcm_s16le", path)
+    speech = FIXTURES / "es.wav"
+    ffmpeg("-i", speech, "-i", speech, "-filter_complex",
+           "[0:a]apad=whole_dur=66[first];[first][1:a]concat=n=2:v=0:a=1,apad=whole_dur=93[a]",
+           "-map", "[a]", "-t", "93", "-c:a", "pcm_s16le", path)
     job = server.import_file(path, {**ECO, "language": "es", "benchmark": True})
     route = "/jobs/" + job["id"]
     first = server.wait(job, lambda detail: detail["job"]["status"] == "running" and detail["job"]["processed_ms"] >= 30_000)
@@ -175,6 +178,7 @@ def verify_checkpoint(server, directory, require_persistent=False):
     assert finished["job"]["status"] == "completed" and finished["job"]["processed_ms"] == 93_000
     ids = {row["id"]: row["start_ms"] for row in finished["segments"]}
     assert all(ids[segment_id] == start_ms for segment_id, start_ms in first_ids)
+    assert any(start_ms >= 60_000 for start_ms in ids.values()), finished
     print(f"PASS 93-second file, real checkpoint at {checkpoint} ms, cancel, server restart and resume", flush=True)
 
 

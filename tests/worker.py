@@ -74,7 +74,7 @@ def main():
     parser.add_argument("--whisper", type=Path, help="Override the packaged Whisper executable.")
     parser.add_argument("--legacy-whisper", type=Path, help="Verify that an unpatched CLI is recovered from automatically.")
     parser.add_argument("--media", type=Path, help="Optional longer comparison file.")
-    parser.add_argument("--timeout", type=int, default=600)
+    parser.add_argument("--timeout", type=int, default=os.environ.get("LOCALSCRIBE_TEST_JOB_TIMEOUT", 600))
     parser.add_argument("--resume", action="store_true", help="Resume matching benchmark jobs from --data and --media.")
     parser.add_argument("--interrupt", action="store_true", help="Cancel and restart an active work queue.")
     parser.add_argument("--output", type=Path)

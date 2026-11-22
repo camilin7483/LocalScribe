@@ -110,7 +110,9 @@ class TestServer:
         assert status == expected, (name, expected, status, content[:700])
         return json.loads(content)
 
-    def wait(self, job, predicate=None, timeout=240):
+    def wait(self, job, predicate=None, timeout=None):
+        if timeout is None:
+            timeout = int(os.environ.get("LOCALSCRIBE_TEST_JOB_TIMEOUT", 240))
         if predicate is None:
             predicate = lambda detail: detail["job"]["status"] not in ("running", "queued")
         cutoff = time.monotonic() + timeout
