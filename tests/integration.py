@@ -75,6 +75,15 @@ def verify_language_edit_export(server):
     return result
 
 
+def verify_eco_auto(server):
+    reference = (FIXTURES / "es.txt").read_text(encoding="utf-8")
+    job = server.import_file(FIXTURES / "es.wav", {"profile": "eco", "benchmark": True, "reference": reference})
+    result = server.wait(job)["job"]
+    assert result["status"] == "completed" and result["detected_language"] == "es", result
+    assert result["plan"]["model"] == "base-q5_1" and result["metrics"]["wer"] < 0.35, result
+    print(f"PASS Eco automatic language regression, Base WER {result['metrics']['wer']:.1%}", flush=True)
+
+
 def verify_media(server, directory, full):
     silent = directory / "silence.wav"
     ffmpeg("-f", "lavfi", "-i", "anullsrc=r=16000:cl=mono", "-t", "3", silent)
@@ -195,6 +204,7 @@ def verify_ai(server, proof, use_diarization):
 
 def main():
     parser = arguments(argparse.ArgumentParser(description=__doc__))
+    parser.add_argument("--eco-regression", action="store_true")
     parser.add_argument("--full", action="store_true", help="All formats, noise and restart/resume test.")
     parser.add_argument("--download", action="store_true", help="Exercise a real model download with internet access.")
     parser.add_argument("--ai", action="store_true", help="Exercise the installed Ollama model.")
@@ -211,6 +221,8 @@ def main():
             assert facts["hardware"]["logical"] > 0 and facts["hardware"]["ram_mib"] > 0 and facts["hardware"]["calibration"]
             if args.download:
                 verify_model_download(server)
+            if args.eco_regression:
+                verify_eco_auto(server)
             proof = verify_language_edit_export(server)
             if not args.ai_only:
                 verify_media(server, directory, args.full)

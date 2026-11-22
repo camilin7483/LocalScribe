@@ -3,6 +3,7 @@
 import argparse
 import base64
 import os
+import sqlite3
 import pathlib
 from urllib.parse import urlsplit
 
@@ -69,6 +70,12 @@ def run(page, server, captures):
     expect(page.get_by_role("heading", name="Prueba local.wav")).to_be_visible()
     player = page.locator("audio")
     page.wait_for_function("() => document.querySelector('audio')?.readyState >= 1", timeout=12_000)
+    wave = page.get_by_test_id("studio-waveform")
+    expect(wave).to_be_visible()
+    assert wave.evaluate("(node) => node.getContext('2d').getImageData(0, 0, node.width, node.height).data.some(value => value > 0)")
+    expect(page.get_by_role("complementary", name="Revisión de subtítulos")).to_be_visible()
+    page.get_by_label("Velocidad").select_option("1.25")
+    assert player.evaluate("(audio) => audio.playbackRate") == 1.25
     before = player.evaluate("(audio) => audio.currentTime")
     page.get_by_role("button", name="Reproducir").click()
     expect(page.get_by_role("button", name="Pausar")).to_be_visible()
@@ -78,6 +85,11 @@ def run(page, server, captures):
     cue.click()
     expected = result["segments"][-1]["start_ms"] / 1000
     assert abs(player.evaluate("(audio) => audio.currentTime") - expected) < 0.15
+    loop = page.get_by_role("button", name="Repetir segmento", exact=False)
+    loop.click()
+    expect(loop).to_have_attribute("aria-pressed", "true")
+    loop.click()
+    expect(loop).to_have_attribute("aria-pressed", "false")
     first = page.get_by_role("textbox", name="Segmento 1", exact=True)
     original = first.input_value()
     assert "transcripción" in original.lower()
@@ -101,6 +113,7 @@ def run(page, server, captures):
     expect(first).to_have_value(edited)
     expect(page.get_by_role("textbox", name="Hablante 1")).to_have_value("Hablante de prueba")
     if captures:
+        expect(page.get_by_test_id("studio-waveform")).to_be_visible()
         page.screenshot(path=captures / "editor.png")
 
     nav(page, "Subtítulos")
@@ -127,6 +140,23 @@ def run(page, server, captures):
     if captures:
         page.screenshot(path=captures / "mobile.png")
 
+    # Populate the isolated workspace to exercise editor pagination separately from recognition.
+    with sqlite3.connect(server.data / "localscribe.sqlite3", timeout=5) as storage:
+        storage.executemany(
+            "INSERT INTO segments(job_id, start_ms, end_ms, text, original) VALUES (?, ?, ?, ?, ?)",
+            [(media_job["id"], n * 50, n * 50 + 49, f"Pagination fixture {n}", f"Pagination fixture {n}") for n in range(125)],
+        )
+    page.goto(server.url + "/#editor/" + media_job["id"])
+    rows = page.locator(".segment-list textarea")
+    expect(rows).to_have_count(100)
+    pagination = page.get_by_role("navigation", name="Transcript pages")
+    pagination.get_by_role("button").last.click()
+    expect(rows).to_have_count(125 + len(result["segments"]) - 100)
+    page.get_by_role("searchbox", name="Search transcript").fill("Pagination fixture 124")
+    expect(rows).to_have_count(1)
+    expect(rows.first).to_have_value("Pagination fixture 124")
+
+
 
 def main():
     parser = arguments(argparse.ArgumentParser(description=__doc__))
@@ -149,7 +179,7 @@ def main():
             assert not external, external
         finally:
             browser.close()
-    print("PASS browser navigation, drag and drop, batch import, real ASR, playback, edit, undo/redo, downloads, locale, theme and mobile layout")
+    print("PASS browser navigation, drag and drop, batch import, real ASR, playback, edit, undo/redo, downloads, locale, theme, mobile layout and long-transcript pagination")
 
 
 if __name__ == "__main__":

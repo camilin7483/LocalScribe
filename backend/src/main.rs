@@ -191,6 +191,7 @@ async fn main() -> Result<()> {
         upload_limit,
         uploads: Semaphore::new(2),
         auxiliary: Semaphore::new(1),
+        waveform: Semaphore::new(1),
         wake: Notify::new(),
         active: Mutex::new(HashMap::new()),
         shutdown: CancellationToken::new(),

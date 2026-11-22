@@ -249,3 +249,52 @@ pub fn browser_type(extension: &str) -> Option<&'static str> {
         _ => None,
     }
 }
+
+pub async fn waveform(
+    program: &Path,
+    source: &Path,
+    duration_ms: i64,
+    cancellation: &CancellationToken,
+) -> Result<Vec<u16>> {
+    use std::process::Stdio;
+    use tokio::io::AsyncReadExt;
+    const BINS: usize = 768;
+    const SAMPLE_RATE: u64 = 4000;
+    let sample_limit = (duration_ms as u64 * SAMPLE_RATE).div_ceil(1000);
+    let mut command = decode(program, source, 0);
+    let mut child = command
+        .args(["-af", "aresample=async=1:first_pts=0", "-t"])
+        .arg(seconds(duration_ms))
+        .args(["-ar", "4000", "-c:a", "pcm_s16le", "-f", "s16le", "pipe:1"])
+        .stdout(Stdio::piped())
+        .spawn()?;
+    let mut stdout = child.stdout.take().context("Missing PCM stream")?;
+    let read = async {
+        let mut peaks = vec![0; BINS];
+        let mut buffer = [0u8; 16385];
+        let mut offset = 0;
+        let mut carry = 0;
+        loop {
+            let count = stdout.read(&mut buffer[carry..]).await? + carry;
+            if count == carry {
+                break;
+            }
+            for sample in buffer[..count].as_chunks::<2>().0 {
+                let bin = (offset * BINS as u64 / sample_limit).min((BINS - 1) as u64) as usize;
+                peaks[bin] = peaks[bin].max(i16::from_le_bytes(*sample).unsigned_abs());
+                offset += 1;
+            }
+            carry = count % 2;
+            buffer[0] = buffer[count - 1];
+        }
+        ensure!(
+            child.wait().await?.success() && offset > 0,
+            "Audio decoding failed"
+        );
+        Ok(peaks)
+    };
+    tokio::select! {
+        _ = cancellation.cancelled() => anyhow::bail!("Cancelled"),
+        result = tokio::time::timeout(Duration::from_secs(180), read) => result?,
+    }
+}

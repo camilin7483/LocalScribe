@@ -96,7 +96,9 @@ impl Hardware {
         let single = self.calibration.first()?.million_ops_per_second.max(0.1);
         let scaling = fastest / single;
         let (preferred, cap, chunk_ms, beam_size) = match profile {
-            Profile::Eco => (0, 2, 30_000, 1),
+            // Base recovered speech on the Spanish regression fixture where Tiny
+            // guessed a different language and returned no text.
+            Profile::Eco => (1, 2, 30_000, 1),
             Profile::Balanced => (
                 usize::from(self.logical >= 3 && scaling >= 1.15),
                 4,

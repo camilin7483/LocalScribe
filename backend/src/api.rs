@@ -36,6 +36,7 @@ pub fn router(state: State, web_root: &Path) -> Router {
         .route("/api/jobs/{id}/segments", patch(edit))
         .route("/api/jobs/{id}/export/{kind}", get(download_export))
         .route("/api/jobs/{id}/preview", post(prepare_preview))
+        .route("/api/jobs/{id}/waveform", get(waveform))
         .route("/api/media/{id}/{variant}", get(play))
         .route(
             "/api/models/{id}",
@@ -563,6 +564,30 @@ async fn delete_model(
         ));
     }
     Ok(StatusCode::NO_CONTENT)
+}
+
+async fn waveform(
+    AxumState(state): AxumState<State>,
+    RoutePath(id): RoutePath<Uuid>,
+) -> ApiResult<Json<Vec<u16>>> {
+    let job = find_job(&state, id)?;
+    let duration = job
+        .duration_ms
+        .filter(|duration| *duration > 0)
+        .ok_or_else(|| ApiError::conflict("Wait for the file to be inspected."))?;
+    let _permit = state
+        .waveform
+        .try_acquire()
+        .map_err(|_| ApiError::conflict("Another waveform is being generated."))?;
+    let engine = state
+        .programs
+        .ffmpeg
+        .as_deref()
+        .ok_or_else(|| ApiError::unavailable("FFmpeg is unavailable."))?;
+    let peaks = media::waveform(engine, &state.source(&job), duration, &state.shutdown)
+        .await
+        .map_err(|_| ApiError::unavailable("Could not read the audio waveform."))?;
+    Ok(Json(peaks))
 }
 
 #[cfg(test)]

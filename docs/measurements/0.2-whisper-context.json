@@ -1,0 +1,40 @@
+{
+  "engine_sha256": "68e82e0192ada76b50f1d2e6df37fd9198de5ac1c22ff0370c5184077a7d9b17",
+  "model": "ggml-base-q5_1.bin",
+  "vad": "ggml-silero-v6.2.0.bin",
+  "clips": [
+    "es.wav",
+    "en.wav"
+  ],
+  "threads": 4,
+  "trials": [
+    {
+      "trial": 1,
+      "mode": "isolated",
+      "seconds": 10.697,
+      "processes": 2,
+      "exact_segments_and_language": true
+    },
+    {
+      "trial": 1,
+      "mode": "shared",
+      "seconds": 8.904,
+      "processes": 1,
+      "exact_segments_and_language": true
+    },
+    {
+      "trial": 2,
+      "mode": "shared",
+      "seconds": 8.888,
+      "processes": 1,
+      "exact_segments_and_language": true
+    },
+    {
+      "trial": 2,
+      "mode": "isolated",
+      "seconds": 9.263,
+      "processes": 2,
+      "exact_segments_and_language": true
+    }
+  ]
+}

@@ -22,6 +22,7 @@ pub struct Runtime {
     pub upload_limit: usize,
     pub uploads: Semaphore,
     pub auxiliary: Semaphore,
+    pub waveform: Semaphore,
     pub wake: Notify,
     pub active: Mutex<HashMap<String, (CancellationToken, u64, usize)>>,
     pub shutdown: CancellationToken,

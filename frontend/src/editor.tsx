@@ -1,7 +1,9 @@
 import { ArrowLeft, AudioLines, Check, ChevronLeft, ChevronRight, Clock3, Eye, EyeOff, Pause, Play, Redo2, Search, Undo2, UserRound } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { errorText, exportJob, live, request, timestamp } from './api'
 import { useEdits } from './editing'
+import { Waveform } from './waveform'
+import { CueReview } from './cue-review'
 import { useLocale } from './i18n'
 import { PickTranscript } from './jobs'
 import type { Detail, Format, Segment } from './types'
@@ -55,25 +57,36 @@ function OpenedEditor({ id }: { id: string }) {
   return <EditableTranscript key={detail.job.id} detail={detail}/>
 }
 
+const SEGMENTS_PER_PAGE = 100
+
 function EditableTranscript({ detail }: { detail: Detail }) {
   const { t, locale, languageName } = useLocale()
   const edit = useEdits(detail)
   const { job } = detail
   const [query, setQuery] = useState('')
+  const [page, setPage] = useState(0)
   const [showOriginal, setShowOriginal] = useState(false)
   const [position, setPosition] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [flash, setFlash] = useState('')
   const [playerError, setPlayerError] = useState('')
   const [playing, setPlaying] = useState(false)
+  const [rate, setRate] = useState(1)
+  const [loop, setLoop] = useState<Segment | null>(null)
   const [mediaDuration, setMediaDuration] = useState(job.duration_ms ?? 0)
   const [preview, setPreview] = useState(detail.preview_ready)
   const [preparing, setPreparing] = useState(false)
   const player = useRef<HTMLMediaElement | null>(null)
   const current = edit.segments.find((segment) => position >= segment.start_ms && position < segment.end_ms)?.id ?? null
   const term = query.trim().toLocaleLowerCase(locale)
-  const shown = edit.segments.filter((segment) => !term || [segment.text, segment.speaker ?? '', showOriginal ? segment.original : ''].some(
-    (value) => value.toLocaleLowerCase(locale).includes(term)))
+  const shown = useMemo(() => term ? edit.segments.filter((segment) =>
+    [segment.text, segment.speaker ?? '', showOriginal ? segment.original : ''].some((value) =>
+      value.toLocaleLowerCase(locale).includes(term))) : edit.segments, [edit.segments, term, showOriginal, locale])
+  const lastPage = Math.max(0, Math.ceil(shown.length / SEGMENTS_PER_PAGE) - 1)
+  const visiblePage = Math.min(page, lastPage)
+  const pageOffset = visiblePage * SEGMENTS_PER_PAGE
+  const visible = shown.slice(pageOffset, pageOffset + SEGMENTS_PER_PAGE)
+  const track = edit.segments.length <= 512 ? edit.segments : visible
   const mediaSource = preview ? 'preview' : detail.original_playback ? 'original' : ''
   const source = mediaSource ? '/api/media/' + job.id + '/' + mediaSource : ''
   const isVideo = detail.video && !preview
@@ -81,6 +94,7 @@ function EditableTranscript({ detail }: { detail: Detail }) {
   function seek(value: number, segment?: Segment) {
     if (player.current && player.current.readyState >= 1) player.current.currentTime = value / 1000
     setPosition(value)
+    if (loop && (value < loop.start_ms || value >= loop.end_ms)) setLoop(null)
     if (segment) {
       setSelected(segment.id)
       document.getElementById('segment-' + segment.id)?.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
@@ -89,8 +103,13 @@ function EditableTranscript({ detail }: { detail: Detail }) {
 
   function jump(direction: -1 | 1) {
     const index = shown.findIndex((segment) => segment.id === (selected ?? current))
-    const next = shown[Math.max(0, Math.min(shown.length - 1, index + direction))]
-    if (next) seek(next.start_ms, next)
+    const nextIndex = Math.max(0, Math.min(shown.length - 1, (index === -1 ? pageOffset - direction : index) + direction))
+    const next = shown[nextIndex]
+    if (next) {
+      setPage(Math.floor(nextIndex / SEGMENTS_PER_PAGE))
+      seek(next.start_ms, next)
+      requestAnimationFrame(() => document.getElementById('segment-' + next.id)?.scrollIntoView({ block: 'nearest' }))
+    }
   }
 
   async function play() {
@@ -118,12 +137,21 @@ function EditableTranscript({ detail }: { detail: Detail }) {
 
   const playbackProps = {
     src: source, preload: 'metadata' as const, 'aria-label': t('playback'),
-    onTimeUpdate: () => setPosition((player.current?.currentTime ?? 0) * 1000),
+    onTimeUpdate: () => {
+      const media = player.current
+      if (!media) return
+      if (loop && !media.paused && media.currentTime * 1000 >= loop.end_ms) media.currentTime = loop.start_ms / 1000
+      setPosition(media.currentTime * 1000)
+    },
     onLoadedMetadata: () => {
+      if (player.current) player.current.playbackRate = rate
       const length = player.current?.duration
       if (length && Number.isFinite(length)) setMediaDuration(length * 1000)
     },
-    onPlay: () => setPlaying(true), onPause: () => setPlaying(false), onEnded: () => setPlaying(false),
+    onPlay: () => {
+      if (loop && player.current && player.current.currentTime * 1000 >= loop.end_ms) seek(loop.start_ms)
+      setPlaying(true)
+    }, onPause: () => setPlaying(false), onEnded: () => setPlaying(false),
     onError: () => setPlayerError(locale === 'es' ? 'El navegador no pudo reproducir el archivo.' : 'The browser could not play this file.'),
   }
 
@@ -138,19 +166,33 @@ function EditableTranscript({ detail }: { detail: Detail }) {
           {playing ? <Pause size={19} fill="currentColor"/> : <Play size={19} fill="currentColor"/>}</button>
         <div className="timeline">
           <div className="timeline-label"><span className="mono">{timestamp(position, true)}</span><span className="mono">{timestamp(mediaDuration)}</span></div>
+          <Waveform id={job.id} fraction={position / Math.max(1, mediaDuration)} />
           <input type="range" aria-label={t('time')} min={0} max={Math.max(1, mediaDuration)} step={1} value={position} onChange={(event) => seek(Number(event.target.value))}/>
-          <div className="timed-segments" aria-hidden="true">{edit.segments.map((segment) => <span key={segment.id} className={current === segment.id ? 'highlighted' : ''}
+          <div className="timed-segments" aria-hidden="true">{track.map((segment) => <span key={segment.id} className={current === segment.id ? 'highlighted' : ''}
             style={{ left: 100 * segment.start_ms / Math.max(1, mediaDuration) + '%', width: 100 * (segment.end_ms - segment.start_ms) / Math.max(1, mediaDuration) + '%' }}/>)}</div>
         </div><AudioLines className="transport-icon" size={21}/>
+      </div>
+      <div className="studio-playback-controls">
+        <label>{locale === 'es' ? 'Velocidad' : 'Playback speed'} <select value={rate} disabled={!source} onChange={(event) => {
+          const value = Number(event.target.value)
+          setRate(value)
+          if (player.current) player.current.playbackRate = value
+        }}>{[0.75, 1, 1.25, 1.5, 2].map((speed) => <option key={speed} value={speed}>{speed}×</option>)}</select></label>
+        <button className="button small secondary" aria-pressed={!!loop} disabled={!source || (!loop && !selected && !current)}
+          onClick={() => {
+            if (loop) { setLoop(null); return }
+            const segment = edit.segments.find((item) => item.id === (selected ?? current))
+            if (segment) { setLoop(segment); seek(segment.start_ms) }
+          }}>{locale === 'es' ? 'Repetir segmento' : 'Loop segment'}{loop ? ' · ' + timestamp(loop.start_ms, true) : ''}</button>
       </div>
       {(!source || playerError) && <div className="preview-note">
         {playerError && <span role="alert" className="inline-error">{playerError}</span>}
         {!preview && <button className="button secondary" disabled={preparing} onClick={() => void prepare()}>{preparing ? t('preparing') : t('prepare')}</button>}
       </div>}
     </section>
-    <section className="panel transcript-panel">
+    <div className="studio-workbench"><section className="panel transcript-panel">
       <div className="editor-tools">
-        <label className="search"><Search size={17}/><input type="search" value={query} placeholder={t('segmentSearch')} aria-label={t('segmentSearch')} onChange={(event) => setQuery(event.target.value)}/></label>
+        <label className="search"><Search size={17}/><input type="search" value={query} placeholder={t('segmentSearch')} aria-label={t('segmentSearch')} onChange={(event) => { setQuery(event.target.value); setPage(0) }}/></label>
         <div className="tool-buttons">
           <button className="icon-button" aria-label={t('before')} title={t('before')} disabled={!shown.length} onClick={() => jump(-1)}><ChevronLeft size={18}/></button>
           <button className="icon-button" aria-label={t('next')} title={t('next')} disabled={!shown.length} onClick={() => jump(1)}><ChevronRight size={18}/></button>
@@ -163,18 +205,30 @@ function EditableTranscript({ detail }: { detail: Detail }) {
       {flash && <p className="notice editor-notice" role="status">{flash}</p>}
       {edit.error && <p className="notice error editor-notice" role="alert">{edit.error}</p>}
       {!shown.length ? <FilesEmpty text={edit.segments.length ? t('noJobs') : t('noSpeech')}/> : <ol className="segment-list">
-        {shown.map((segment, index) => <li key={segment.id} id={'segment-' + segment.id} className={(current === segment.id || selected === segment.id) ? 'active-segment' : ''}>
+        {visible.map((segment, index) => <li key={segment.id} id={'segment-' + segment.id} className={(current === segment.id || selected === segment.id) ? 'active-segment' : ''}>
           <button className="cue-time mono" onClick={() => seek(segment.start_ms, segment)}><Clock3 size={14}/>{timestamp(segment.start_ms, true)}</button>
-          <div className="segment-body"><label className="speaker-input"><UserRound size={14}/><input aria-label={t('speaker') + ' ' + (index + 1)}
+          <div className="segment-body"><label className="speaker-input"><UserRound size={14}/><input aria-label={t('speaker') + ' ' + (pageOffset + index + 1)}
             placeholder={t('speakerPlaceholder')} value={segment.speaker ?? ''} maxLength={60} onChange={(event) => edit.change(segment.id, { speaker: event.target.value || null })}/></label>
-            <textarea data-testid={'segment-input-' + segment.id} aria-label={t('segment') + ' ' + (index + 1)} rows={Math.min(5, Math.max(2, Math.ceil(segment.text.length / 95)))}
+            <textarea data-testid={'segment-input-' + segment.id} aria-label={t('segment') + ' ' + (pageOffset + index + 1)} rows={Math.min(5, Math.max(2, Math.ceil(segment.text.length / 95)))}
               value={segment.text} maxLength={8000} onChange={(event) => edit.change(segment.id, { text: event.target.value })}/>
             {showOriginal && <blockquote>{segment.original}</blockquote>}</div>
         </li>)}
       </ol>}
+      {lastPage > 0 && <nav className="studio-page" aria-label={locale === 'es' ? 'Páginas de la transcripción' : 'Transcript pages'}>
+        <button className="icon-button" disabled={visiblePage === 0} onClick={() => setPage(visiblePage - 1)} aria-label={t('before')}><ChevronLeft size={18}/></button>
+        <span aria-live="polite">{pageOffset + 1}–{pageOffset + visible.length} / {shown.length}</span>
+        <button className="icon-button" disabled={visiblePage === lastPage} onClick={() => setPage(visiblePage + 1)} aria-label={t('next')}><ChevronRight size={18}/></button>
+      </nav>}
       <div className="editor-footer" aria-live="polite"><span>{edit.state === 'saved' && <Check size={15}/>} {t(edit.state)}</span>
         {edit.state === 'unsaved' && <button className="button small secondary" onClick={() => void edit.save()}>{t('save')}</button>}</div>
     </section>
+    <CueReview segments={edit.segments} open={(segment) => {
+      setQuery('')
+      setPage(Math.floor(edit.segments.findIndex((item) => item.id === segment.id) / SEGMENTS_PER_PAGE))
+      seek(segment.start_ms, segment)
+      requestAnimationFrame(() => document.getElementById('segment-' + segment.id)?.querySelector('textarea')?.focus())
+    }}/>
+    </div>
   </div>
 }
 
