@@ -91,7 +91,7 @@ export function App() {
         <div className="topbar-path"><span>{t('workspace')}</span><span className="path-divider">/</span><strong>{t(route.view)}</strong></div>
         <div className="topbar-tools">
           <a className="local-status" href="#privacy"><span/>{t('private')}</a>
-          <button className="icon-button locale-button" aria-label={t('langSwitch')} title={t('langSwitch')} onClick={switchLocale}><Globe2 size={17}/><span>{locale.toUpperCase()}</span></button>
+          <button className="icon-button locale-button" aria-label={t('langSwitch') + ' · ' + locale.toUpperCase()} title={t('langSwitch')} onClick={switchLocale}><Globe2 size={17}/><span>{locale.toUpperCase()}</span></button>
           <button className="icon-button" aria-label={t(theme === 'dark' ? 'light' : 'dark')} title={t(theme === 'dark' ? 'light' : 'dark')} onClick={switchTheme}>{theme === 'dark' ? <Sun size={18}/> : <MoonStar size={18}/>}</button>
         </div>
       </header>

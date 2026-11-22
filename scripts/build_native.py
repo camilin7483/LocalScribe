@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import os
 import pathlib
+import platform
 import shutil
 import subprocess
 import tarfile
@@ -63,8 +64,9 @@ def whisper(source, target, variant, jobs):
     ]
     if variant == "vulkan":
         flags.append("-DGGML_VULKAN=ON")
-    if variant == "generic":
-        flags += [f"-DGGML_{feature}=OFF" for feature in ("AVX", "AVX2", "SSE42", "F16C", "FMA", "BMI2")]
+    if platform.machine().lower() in ("amd64", "x86_64"):
+        instruction_set = "OFF" if variant == "generic" else "ON"
+        flags += [f"-DGGML_{feature}={instruction_set}" for feature in ("AVX", "AVX2", "SSE42", "F16C", "FMA", "BMI2")]
     if os.name == "nt":
         flags.append("-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded")
     call("cmake", "-S", source, "-B", build, *flags)

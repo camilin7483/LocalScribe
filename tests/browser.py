@@ -2,6 +2,7 @@
 """Drive the production UI against the native local transcription service."""
 import argparse
 import base64
+import json
 import os
 import sqlite3
 import pathlib
@@ -39,7 +40,26 @@ def nav(page, title):
     page.get_by_role("navigation").get_by_role("link", name=title, exact=True).click()
 
 
-def run(page, server, captures):
+def accessibility(page, state, script, reports):
+    if script is None:
+        return
+    if not page.evaluate("typeof window.axe !== 'undefined'"):
+        page.evaluate(script)
+    checks = page.evaluate("""async () => {
+        await document.fonts.ready;
+        const runOnly = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+        const result = await axe.run(document, { runOnly });
+        const describe = item => ({
+            rule: item.id, impact: item.impact,
+            elements: item.nodes.map(node => ({ target: node.target, detail: node.failureSummary })),
+        });
+        return { engine: result.testEngine, passed: result.passes.length,
+            violations: result.violations.map(describe), incomplete: result.incomplete.map(describe) };
+    }""")
+    reports.append({"state": state, **checks})
+
+
+def run(page, server, captures, axe_script=None, accessibility_reports=None):
     page.goto(server.url)
     page.wait_for_load_state("networkidle")
     expect(page.get_by_role("heading", name="Tu estudio de transcripción")).to_be_visible()
@@ -74,6 +94,7 @@ def run(page, server, captures):
     expect(wave).to_be_visible()
     assert wave.evaluate("(node) => node.getContext('2d').getImageData(0, 0, node.width, node.height).data.some(value => value > 0)")
     expect(page.get_by_role("complementary", name="Revisión de subtítulos")).to_be_visible()
+    accessibility(page, "editor-dark-es", axe_script, accessibility_reports)
     page.get_by_label("Velocidad").select_option("1.25")
     assert player.evaluate("(audio) => audio.playbackRate") == 1.25
     before = player.evaluate("(audio) => audio.currentTime")
@@ -115,6 +136,7 @@ def run(page, server, captures):
     apply_timing.click()
     expect(row.get_by_role("alert")).to_have_text("El final debe ser posterior al inicio.")
     expect(end_field).to_have_attribute("aria-invalid", "true")
+    accessibility(page, "invalid-cue-timing-es", axe_script, accessibility_reports)
     assert server.api(route)["job"]["revision"] == result["job"]["revision"]
     changed_start_ms = original_cue["start_ms"] + 120
     changed_end_ms = min(original_cue["end_ms"], changed_start_ms + 600)
@@ -162,6 +184,7 @@ def run(page, server, captures):
     export.select_option("srt")
     check = page.get_by_role("dialog", name="Revisar antes de exportar")
     expect(check).to_contain_text("20 caracteres por segundo")
+    accessibility(page, "caption-export-review-es", axe_script, accessibility_reports)
     if captures:
         page.screenshot(path=captures / "caption-export-check.png")
     check.get_by_role("button", name="Ir al primer segmento").click()
@@ -221,13 +244,20 @@ def run(page, server, captures):
     page.get_by_role("searchbox", name="Search transcript").fill("Pagination fixture 124")
     expect(rows).to_have_count(1)
     expect(rows.first).to_have_value("Pagination fixture 124")
+    accessibility(page, "editor-mobile-light-en", axe_script, accessibility_reports)
 
 
 
 def main():
     parser = arguments(argparse.ArgumentParser(description=__doc__))
     parser.add_argument("--captures", type=pathlib.Path)
+    parser.add_argument("--axe-script", type=pathlib.Path, help="Optional local axe-core JavaScript file.")
+    parser.add_argument("--axe-output", type=pathlib.Path, help="Write a JSON report of accessibility checks.")
     args = parser.parse_args()
+    if args.axe_output and not args.axe_script:
+        parser.error("--axe-output requires --axe-script")
+    axe_script = args.axe_script.read_text(encoding="utf-8") if args.axe_script else None
+    accessibility_reports = []
     if args.captures:
         args.captures.mkdir(parents=True, exist_ok=True)
     with TestServer(args.binary, args.models, args.web, args.data) as server, sync_playwright() as playwright:
@@ -240,11 +270,15 @@ def main():
         page.on("request", lambda request: external.append(request.url) if urlsplit(request.url).hostname not in {"127.0.0.1", None} else None)
         page.on("response", lambda response: failures.append(f"{response.status} {response.url}") if response.status >= 400 else None)
         try:
-            run(page, server, args.captures)
+            run(page, server, args.captures, axe_script, accessibility_reports)
             assert not failures, failures
             assert not external, external
         finally:
             browser.close()
+            if args.axe_output:
+                args.axe_output.write_text(json.dumps(accessibility_reports, indent=2) + "\n", encoding="utf-8")
+    for report in accessibility_reports:
+        assert not report["violations"], (report["state"], report["violations"])
     print("PASS browser navigation, drag and drop, batch import, real ASR, playback, timing and text edits, undo/redo, downloads, locale, theme, mobile layout and long-transcript pagination")
 
 

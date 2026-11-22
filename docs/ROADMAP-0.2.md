@@ -86,6 +86,8 @@ Cada segmento admite cambios de inicio y final con precisión de milisegundos. E
 
 Cuando se elige SRT o WebVTT en el editor y hay incidencias, la revisión muestra cuántos segmentos exceden el límite de lectura, se solapan o tienen tiempos inválidos. Se puede abrir el primer segmento señalado o continuar con la descarga.
 
+El navegador Chromium con red aislada comprobó el acceso por teclado, el aviso por un rango inválido, las marcas originales tras guardar, los cambios por deshacer y rehacer, el regreso desde el aviso de exportación y los tiempos descargados en SRT y WebVTT. La prueba usa el servidor real, Whisper y una grabación reproducible del repositorio.
+
 ## Comparador externo de inferencia
 
 La comparación exploratoria usa Base Q5_1 con whisper.cpp y la conversión Base de Systran en CTranslate2 con cómputo INT8. Ambas operan en CPU con el mismo número de hilos, idioma conocido, un candidato y VAD desactivado. La latencia incluye carga de pesos y decodificación con caché de archivos caliente. La importación de Python queda fuera del cronómetro. La cuantización, el formato y las implementaciones difieren. Esta medida se refiere a los motores y esa configuración. [faster-whisper](https://github.com/SYSTRAN/faster-whisper) · [Modelo Base, revisión fija](https://huggingface.co/Systran/faster-whisper-base/tree/ebe41f70d5b6dfa9166e2c581c45c9c0cfc57b66)
@@ -94,4 +96,5 @@ La comparación exploratoria usa Base Q5_1 con whisper.cpp y la conversión Base
 python scripts/compare_inference_engines.py CORPUS/manifest.json --whisper CLI_CPU --ggml-model BASE_Q5_1 --ct2-model CT2_BASE --output RESULTS.json
 ```
 
-El navegador Chromium con red aislada comprobó el acceso por teclado, el aviso por un rango inválido, las marcas originales tras guardar, los cambios por deshacer y rehacer, el regreso desde el aviso de exportación y los tiempos descargados en SRT y WebVTT. La prueba usa el servidor real, Whisper y una grabación reproducible del repositorio.
+
+En cuatro grabaciones humanas y dos repeticiones por motor, la mediana fue de 16,557 s para whisper.cpp y 6,468 s para faster-whisper. El WER macro fue 8,24% y 10,41%, respectivamente. La comparación alternó el orden y compartió el equipo con otras tareas. La variante INT8 redujo el tiempo mediano un 61% en este ensayo, con 2,17 puntos porcentuales más de error. La alfa usa whisper.cpp. [Medición por entrada](measurements/0.2-inference-engines.json)

@@ -1,0 +1,173 @@
+{
+  "dataset": "google/fleurs",
+  "revision": "70bb2e84b976b7e960aa89f1c648e09c59f894dd",
+  "license": "CC-BY-4.0",
+  "threads": 4,
+  "beam": 1,
+  "vad": false,
+  "language": "manual",
+  "scope": "model load and decode with warm filesystem caches; Python import excluded",
+  "whisper_cli_sha256": "68e82e0192ada76b50f1d2e6df37fd9198de5ac1c22ff0370c5184077a7d9b17",
+  "ggml_model": "ggml-base-q5_1.bin",
+  "ggml_model_sha256": "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898",
+  "faster_whisper_version": "1.2.1",
+  "ctranslate2_version": "4.8.1",
+  "ctranslate2_model_sha256": "d01c3014881c9c6f3133c182f3d2887eb6ca1c789a7538c5c007196857a0a6a9",
+  "ctranslate2_compute_type": "int8",
+  "summary": {
+    "whisper.cpp": {
+      "median_seconds": 16.5565,
+      "macro_wer": 0.08243733064913805
+    },
+    "faster-whisper": {
+      "median_seconds": 6.468,
+      "macro_wer": 0.10414601412252741
+    }
+  },
+  "runs": [
+    {
+      "engine": "whisper.cpp",
+      "file": "es-1001146817223348054.wav",
+      "language": "es",
+      "sha256": "861ceedc4d50fbe52fc89b6d0c0fa740b9cd6fa668388e754064847386af0faf",
+      "repeat": 1,
+      "seconds": 40.39,
+      "wer": 0.10344827586206896
+    },
+    {
+      "engine": "faster-whisper",
+      "file": "es-1001146817223348054.wav",
+      "language": "es",
+      "sha256": "861ceedc4d50fbe52fc89b6d0c0fa740b9cd6fa668388e754064847386af0faf",
+      "repeat": 1,
+      "seconds": 13.5,
+      "wer": 0.10344827586206896
+    },
+    {
+      "engine": "faster-whisper",
+      "file": "es-10050510856477907332.wav",
+      "language": "es",
+      "sha256": "5b0fcf5b42064d33a36d26dab527cb230b4751587b4066ef11157ea603586d8d",
+      "repeat": 1,
+      "seconds": 21.488,
+      "wer": 0.11764705882352941
+    },
+    {
+      "engine": "whisper.cpp",
+      "file": "es-10050510856477907332.wav",
+      "language": "es",
+      "sha256": "5b0fcf5b42064d33a36d26dab527cb230b4751587b4066ef11157ea603586d8d",
+      "repeat": 1,
+      "seconds": 37.306,
+      "wer": 0.0784313725490196
+    },
+    {
+      "engine": "whisper.cpp",
+      "file": "en-1003119935936341070.wav",
+      "language": "en",
+      "sha256": "33aca50159ec2e3cbcc894eb26faa916d6badb1b49fb75994973561540a7f012",
+      "repeat": 1,
+      "seconds": 10.648,
+      "wer": 0.05263157894736842
+    },
+    {
+      "engine": "faster-whisper",
+      "file": "en-1003119935936341070.wav",
+      "language": "en",
+      "sha256": "33aca50159ec2e3cbcc894eb26faa916d6badb1b49fb75994973561540a7f012",
+      "repeat": 1,
+      "seconds": 4.115,
+      "wer": 0.05263157894736842
+    },
+    {
+      "engine": "faster-whisper",
+      "file": "en-10052240106321793346.wav",
+      "language": "en",
+      "sha256": "7603cae3294309ef70d234180cefccc3b13865ee525262228a636069b9b62841",
+      "repeat": 1,
+      "seconds": 4.487,
+      "wer": 0.14285714285714285
+    },
+    {
+      "engine": "whisper.cpp",
+      "file": "en-10052240106321793346.wav",
+      "language": "en",
+      "sha256": "7603cae3294309ef70d234180cefccc3b13865ee525262228a636069b9b62841",
+      "repeat": 1,
+      "seconds": 8.049,
+      "wer": 0.09523809523809523
+    },
+    {
+      "engine": "faster-whisper",
+      "file": "es-1001146817223348054.wav",
+      "language": "es",
+      "sha256": "861ceedc4d50fbe52fc89b6d0c0fa740b9cd6fa668388e754064847386af0faf",
+      "repeat": 2,
+      "seconds": 5.212,
+      "wer": 0.10344827586206896
+    },
+    {
+      "engine": "whisper.cpp",
+      "file": "es-1001146817223348054.wav",
+      "language": "es",
+      "sha256": "861ceedc4d50fbe52fc89b6d0c0fa740b9cd6fa668388e754064847386af0faf",
+      "repeat": 2,
+      "seconds": 21.009,
+      "wer": 0.10344827586206896
+    },
+    {
+      "engine": "whisper.cpp",
+      "file": "es-10050510856477907332.wav",
+      "language": "es",
+      "sha256": "5b0fcf5b42064d33a36d26dab527cb230b4751587b4066ef11157ea603586d8d",
+      "repeat": 2,
+      "seconds": 32.167,
+      "wer": 0.0784313725490196
+    },
+    {
+      "engine": "faster-whisper",
+      "file": "es-10050510856477907332.wav",
+      "language": "es",
+      "sha256": "5b0fcf5b42064d33a36d26dab527cb230b4751587b4066ef11157ea603586d8d",
+      "repeat": 2,
+      "seconds": 11.25,
+      "wer": 0.11764705882352941
+    },
+    {
+      "engine": "faster-whisper",
+      "file": "en-1003119935936341070.wav",
+      "language": "en",
+      "sha256": "33aca50159ec2e3cbcc894eb26faa916d6badb1b49fb75994973561540a7f012",
+      "repeat": 2,
+      "seconds": 6.605,
+      "wer": 0.05263157894736842
+    },
+    {
+      "engine": "whisper.cpp",
+      "file": "en-1003119935936341070.wav",
+      "language": "en",
+      "sha256": "33aca50159ec2e3cbcc894eb26faa916d6badb1b49fb75994973561540a7f012",
+      "repeat": 2,
+      "seconds": 11.848,
+      "wer": 0.05263157894736842
+    },
+    {
+      "engine": "whisper.cpp",
+      "file": "en-10052240106321793346.wav",
+      "language": "en",
+      "sha256": "7603cae3294309ef70d234180cefccc3b13865ee525262228a636069b9b62841",
+      "repeat": 2,
+      "seconds": 12.104,
+      "wer": 0.09523809523809523
+    },
+    {
+      "engine": "faster-whisper",
+      "file": "en-10052240106321793346.wav",
+      "language": "en",
+      "sha256": "7603cae3294309ef70d234180cefccc3b13865ee525262228a636069b9b62841",
+      "repeat": 2,
+      "seconds": 6.331,
+      "wer": 0.14285714285714285
+    }
+  ]
+}

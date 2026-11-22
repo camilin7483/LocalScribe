@@ -312,7 +312,7 @@ progress::-moz-progress-bar, meter::-moz-meter-bar { background: var(--mint); }
 .segment-body textarea { width: 100%; resize: vertical; display: block; background: transparent; border: 1px solid transparent; border-radius: 5px; color: var(--text); line-height: 1.48; font-size: .93rem; padding: 4px 6px; }
 .segment-body textarea:hover, .segment-body textarea:focus { border-color: var(--line); background: var(--bg); }
 .speaker-input { display: flex; align-items: center; gap: 5px; margin-left: 6px; color: var(--violet); }
-.speaker-input input { width: 160px; max-width: 85%; border: 0; background: transparent; color: var(--violet); font-size: .74rem; }
+.speaker-input input { min-height: 24px; width: 160px; max-width: 85%; border: 0; background: transparent; color: var(--violet); font-size: .74rem; }
 .segment-body blockquote { color: var(--muted); padding: 6px 9px; border-inline-start: 2px solid var(--line); margin: 7px 0 1px 6px; font-size: .82rem; white-space: pre-wrap; }
 .editor-footer { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-top: 1px solid var(--line); color: var(--muted); font-size: .75rem; }
 .editor-footer span { display: flex; align-items: center; gap: 6px; }
