@@ -95,6 +95,53 @@ def run(page, server, captures):
     expect(loop).to_have_attribute("aria-pressed", "true")
     loop.click()
     expect(loop).to_have_attribute("aria-pressed", "false")
+    original_cue = result["segments"][0]
+    cue_id = original_cue["id"]
+    route = "/jobs/" + media_job["id"]
+    row = page.locator(f"#segment-{cue_id}")
+    edit_timing = row.get_by_role("button", name="Ajustar tiempos")
+    edit_timing.click()
+    start_field = row.get_by_role("textbox", name="Inicio", exact=True)
+    end_field = row.get_by_role("textbox", name="Final", exact=True)
+    apply_timing = row.get_by_role("button", name="Aplicar tiempos")
+    expect(start_field).to_be_focused()
+    original_start = start_field.input_value()
+    original_end = end_field.input_value()
+    row.get_by_role("button", name="Inicio en posición actual").click()
+    expect(start_field).to_have_value(original_start if len(result["segments"]) == 1 else
+                                     "00:" + page.locator(".cue-time").last.inner_text())
+    start_field.fill(original_start)
+    end_field.fill(original_start)
+    apply_timing.click()
+    expect(row.get_by_role("alert")).to_have_text("El final debe ser posterior al inicio.")
+    expect(end_field).to_have_attribute("aria-invalid", "true")
+    assert server.api(route)["job"]["revision"] == result["job"]["revision"]
+    changed_start_ms = original_cue["start_ms"] + 120
+    changed_end_ms = min(original_cue["end_ms"], changed_start_ms + 600)
+
+    def timecode(ms):
+        return f"{ms // 3600000:02d}:{ms // 60000 % 60:02d}:{ms // 1000 % 60:02d}.{ms % 1000:03d}"
+
+    start_field.fill(timecode(changed_start_ms).replace(".", ","))
+    end_field.fill(timecode(changed_end_ms))
+    if captures:
+        row.screenshot(path=captures / "cue-timing.png")
+    apply_timing.click()
+    expect(edit_timing).to_be_focused()
+    expect(page.get_by_text("Guardado en este equipo", exact=True)).to_be_visible()
+    cue = next(segment for segment in server.api(route)["segments"] if segment["id"] == cue_id)
+    assert (cue["start_ms"], cue["end_ms"]) == (changed_start_ms, changed_end_ms)
+    assert (cue["original_start_ms"], cue["original_end_ms"]) == (original_cue["start_ms"], original_cue["end_ms"])
+    page.get_by_role("button", name="Deshacer", exact=True).click()
+    expect(row.locator(".cue-time")).to_have_text(original_start[3:])
+    page.get_by_role("button", name="Rehacer", exact=True).click()
+    expect(row.locator(".cue-time")).to_have_text(timecode(changed_start_ms)[3:])
+    edit_timing.click()
+    row.get_by_role("button", name="Recuperar tiempos originales").click()
+    expect(start_field).to_have_value(original_start)
+    expect(end_field).to_have_value(original_end)
+    end_field.press("Escape")
+    expect(edit_timing).to_be_focused()
     first = page.get_by_role("textbox", name="Segmento 1", exact=True)
     original = first.input_value()
     assert "transcripción" in original.lower()
@@ -111,9 +158,21 @@ def run(page, server, captures):
     page.get_by_role("searchbox", name="Buscar en la transcripción").fill("zz-sin-coincidencia")
     expect(page.locator(".segment-list").locator("textarea")).to_have_count(0)
     page.get_by_role("searchbox", name="Buscar en la transcripción").fill("")
+    export = page.get_by_role("combobox", name="Exportar")
+    export.select_option("srt")
+    check = page.get_by_role("dialog", name="Revisar antes de exportar")
+    expect(check).to_contain_text("20 caracteres por segundo")
+    if captures:
+        page.screenshot(path=captures / "caption-export-check.png")
+    check.get_by_role("button", name="Ir al primer segmento").click()
+    expect(check).not_to_be_visible()
+    expect(first).to_be_focused()
+    export.select_option("srt")
     with page.expect_download() as download:
-        page.get_by_role("combobox", name="Exportar").select_option("srt")
-    assert "Edición de prueba" in pathlib.Path(download.value.path()).read_text(encoding="utf-8")
+        check.get_by_role("button", name="Exportar SRT").click()
+    srt = pathlib.Path(download.value.path()).read_text(encoding="utf-8")
+    assert "Edición de prueba" in srt
+    assert f"{timecode(changed_start_ms)} --> {timecode(changed_end_ms)}".replace(".", ",") in srt
     page.reload()
     expect(first).to_have_value(edited)
     expect(page.get_by_role("textbox", name="Hablante 1")).to_have_value("Hablante de prueba")
@@ -126,7 +185,9 @@ def run(page, server, captures):
     expect(page.locator("pre.caption-preview")).to_contain_text("00:00:")
     with page.expect_download() as download:
         page.get_by_role("combobox", name="Exportar").select_option("vtt")
-    assert pathlib.Path(download.value.path()).read_text(encoding="utf-8").startswith("WEBVTT")
+    vtt = pathlib.Path(download.value.path()).read_text(encoding="utf-8")
+    assert vtt.startswith("WEBVTT")
+    assert f"{timecode(changed_start_ms)} --> {timecode(changed_end_ms)}" in vtt
 
     nav(page, "IA local")
     expect(page.get_by_text("Activa Ollama local en Privacidad para usar estas acciones.")).to_be_visible()
@@ -184,7 +245,7 @@ def main():
             assert not external, external
         finally:
             browser.close()
-    print("PASS browser navigation, drag and drop, batch import, real ASR, playback, edit, undo/redo, downloads, locale, theme, mobile layout and long-transcript pagination")
+    print("PASS browser navigation, drag and drop, batch import, real ASR, playback, timing and text edits, undo/redo, downloads, locale, theme, mobile layout and long-transcript pagination")
 
 
 if __name__ == "__main__":

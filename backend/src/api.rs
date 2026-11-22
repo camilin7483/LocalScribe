@@ -399,6 +399,24 @@ async fn edit(
             "A speaker label must use at most 120 UTF-8 bytes.",
         ));
     }
+    match (edit.start_ms, edit.end_ms) {
+        (None, None) => {}
+        (Some(start), Some(end)) if start >= 0 && start < end => {
+            if find_job(&state, id)?
+                .duration_ms
+                .is_none_or(|duration| end > duration)
+            {
+                return Err(ApiError::input(
+                    "Segment timing must fit within the media duration.",
+                ));
+            }
+        }
+        _ => {
+            return Err(ApiError::input(
+                "Provide a start and an end, with the end after the start.",
+            ));
+        }
+    }
     let revision = state.db.edit(&id.to_string(), &edit)?.ok_or_else(|| {
         ApiError::conflict("This transcript changed. Reload before editing again.")
     })?;

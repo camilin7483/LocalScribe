@@ -250,9 +250,26 @@ impl Database {
         if updated == 0 {
             return Ok(None);
         }
+        if let (Some(start), Some(end)) = (edit.start_ms, edit.end_ms) {
+            tx.execute(
+                "INSERT INTO segment_original_timing(segment_id,start_ms,end_ms)
+                 SELECT id,start_ms,end_ms FROM segments
+                 WHERE job_id=?1 AND id=?2 AND (start_ms<>?3 OR end_ms<>?4)
+                 ON CONFLICT(segment_id) DO NOTHING",
+                params![id, edit.id, start, end],
+            )?;
+        }
         let changed = tx.execute(
-            "UPDATE segments SET text=?3,speaker=?4 WHERE job_id=?1 AND id=?2",
-            params![id, edit.id, edit.text, edit.speaker],
+            "UPDATE segments SET text=?3,speaker=?4,start_ms=COALESCE(?5,start_ms),
+             end_ms=COALESCE(?6,end_ms) WHERE job_id=?1 AND id=?2",
+            params![
+                id,
+                edit.id,
+                edit.text,
+                edit.speaker,
+                edit.start_ms,
+                edit.end_ms
+            ],
         )?;
         ensure!(changed == 1, "segment does not exist");
         tx.commit()?;
@@ -305,7 +322,12 @@ fn read_settings(conn: &Connection) -> Result<Settings> {
 }
 
 fn read_segments(conn: &Connection, id: &str) -> Result<Vec<Segment>> {
-    let mut statement = conn.prepare("SELECT id,start_ms,end_ms,text,original,speaker FROM segments WHERE job_id=?1 ORDER BY start_ms,id")?;
+    let mut statement = conn.prepare(
+        "SELECT s.id,s.start_ms,s.end_ms,s.text,s.original,s.speaker,
+         COALESCE(o.start_ms,s.start_ms),COALESCE(o.end_ms,s.end_ms)
+         FROM segments s LEFT JOIN segment_original_timing o ON o.segment_id=s.id
+         WHERE s.job_id=?1 ORDER BY s.start_ms,s.id",
+    )?;
     Ok(statement
         .query_map([id], |row| {
             Ok(Segment {
@@ -315,6 +337,8 @@ fn read_segments(conn: &Connection, id: &str) -> Result<Vec<Segment>> {
                 text: row.get(3)?,
                 original: row.get(4)?,
                 speaker: row.get(5)?,
+                original_start_ms: row.get(6)?,
+                original_end_ms: row.get(7)?,
             })
         })?
         .collect::<rusqlite::Result<_>>()?)

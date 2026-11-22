@@ -36,7 +36,7 @@ export type Job = {
   revision: number; plan: Plan; metrics: Metrics; vad: boolean; benchmark: boolean
 }
 export type Jobs = { jobs: Job[]; cursor: number | null }
-export type Segment = { id: number; start_ms: number; end_ms: number; text: string; original: string; speaker: string | null }
+export type Segment = { id: number; start_ms: number; end_ms: number; original_start_ms: number; original_end_ms: number; text: string; original: string; speaker: string | null }
 export type Detail = { job: Job; segments: Segment[]; original_playback: boolean; video: boolean; preview_ready: boolean }
 export type Options = { language: string; profile: Profile; model: string | null; vad: boolean; benchmark: boolean; reference: string | null }
 export type Insight = {

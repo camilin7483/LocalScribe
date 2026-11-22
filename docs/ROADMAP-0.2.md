@@ -79,3 +79,19 @@ El equipo de referencia informa Intel Graphics ADL GT2 con Mesa 26.2.7. El compa
 En Chromium con red aislada, 30 búsquedas sobre 3.000 segmentos sintéticos durante una transcripción real de fondo dieron 37,2 ms en p50, 74,8 ms en p95 y 107,5 ms como máximo. La duración va del evento de entrada al segundo frame de animación. Cada muestra esperaba el resultado correcto. Este caso cubre búsqueda en un editor abierto; la apertura inicial, otros equipos y tareas de usuarios requieren medición propia. [Muestras de latencia](measurements/0.2-editor-response.json)
 
 La prueba posterior con silencio digital confirmó dos ventanas inferidas y una omitida en cada modo. CLI, worker persistente y reintento con binario antiguo generaron exactamente los mismos cuatro segmentos con sus marcas de tiempo. [Datos del control de silencio](measurements/0.2-worker-silence.json)
+
+## Edición de tiempos y control de exportación
+
+Cada segmento admite cambios de inicio y final con precisión de milisegundos. El editor acepta coma o punto decimal, puede tomar el instante del reproductor para cualquiera de los dos extremos y conserva los tiempos originales tras recargar. Deshacer y rehacer comparten el historial del texto. La validación identifica los campos antes de guardar y el servidor vuelve a comprobar el intervalo contra la duración del medio. SRT y WebVTT usan los valores actuales. La exportación JSON conserva además los valores originales. [WebVTT](https://www.w3.org/TR/webvtt/) · [Identificación de errores en WCAG](https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html)
+
+Cuando se elige SRT o WebVTT en el editor y hay incidencias, la revisión muestra cuántos segmentos exceden el límite de lectura, se solapan o tienen tiempos inválidos. Se puede abrir el primer segmento señalado o continuar con la descarga.
+
+## Comparador externo de inferencia
+
+La comparación exploratoria usa Base Q5_1 con whisper.cpp y la conversión Base de Systran en CTranslate2 con cómputo INT8. Ambas operan en CPU con el mismo número de hilos, idioma conocido, un candidato y VAD desactivado. La latencia incluye carga de pesos y decodificación con caché de archivos caliente. La importación de Python queda fuera del cronómetro. La cuantización, el formato y las implementaciones difieren. Esta medida se refiere a los motores y esa configuración. [faster-whisper](https://github.com/SYSTRAN/faster-whisper) · [Modelo Base, revisión fija](https://huggingface.co/Systran/faster-whisper-base/tree/ebe41f70d5b6dfa9166e2c581c45c9c0cfc57b66)
+
+```sh
+python scripts/compare_inference_engines.py CORPUS/manifest.json --whisper CLI_CPU --ggml-model BASE_Q5_1 --ct2-model CT2_BASE --output RESULTS.json
+```
+
+El navegador Chromium con red aislada comprobó el acceso por teclado, el aviso por un rango inválido, las marcas originales tras guardar, los cambios por deshacer y rehacer, el regreso desde el aviso de exportación y los tiempos descargados en SRT y WebVTT. La prueba usa el servidor real, Whisper y una grabación reproducible del repositorio.

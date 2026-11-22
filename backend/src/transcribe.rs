@@ -312,6 +312,8 @@ fn to_segments(
                 id: 0,
                 start_ms: start,
                 end_ms: end,
+                original_start_ms: start,
+                original_end_ms: end,
                 text: text.into(),
                 original: text.into(),
                 speaker: None,

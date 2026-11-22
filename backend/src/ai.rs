@@ -387,6 +387,8 @@ mod tests {
             id: 4,
             start_ms: 1200,
             end_ms: 2380,
+            original_start_ms: 1200,
+            original_end_ms: 2380,
             text: "El informe sale el jueves.".into(),
             original: String::new(),
             speaker: None,

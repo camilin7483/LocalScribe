@@ -52,6 +52,8 @@ pub struct Segment {
     pub id: i64,
     pub start_ms: i64,
     pub end_ms: i64,
+    pub original_start_ms: i64,
+    pub original_end_ms: i64,
     pub text: String,
     pub original: String,
     pub speaker: Option<String>,
@@ -64,6 +66,8 @@ pub struct SegmentEdit {
     pub text: String,
     pub speaker: Option<String>,
     pub revision: i64,
+    pub start_ms: Option<i64>,
+    pub end_ms: Option<i64>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]

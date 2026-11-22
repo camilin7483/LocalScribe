@@ -60,6 +60,14 @@ def verify_language_edit_export(server):
     assert segments and 0 <= segments[0]["start_ms"] < segments[0]["end_ms"] <= job["duration_ms"]
     edits = {"id": segments[0]["id"], "text": "Texto comprobado en LocalScribe.", "speaker": "Hablante de prueba", "revision": 0}
     route = "/jobs/" + job["id"]
+    for bad_timing in (
+        {"start_ms": 0},
+        {"start_ms": -1, "end_ms": 1},
+        {"start_ms": 500, "end_ms": 500},
+        {"start_ms": 0, "end_ms": job["duration_ms"] + 1},
+    ):
+        server.api(route + "/segments", "PATCH", {**edits, **bad_timing}, 400)
+    assert server.api(route)["job"]["revision"] == 0
     assert server.api(route + "/segments", "PATCH", edits)["revision"] == 1
     server.api(route + "/segments", "PATCH", edits, 409)
     saved = server.api(route)["segments"][0]

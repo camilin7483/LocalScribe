@@ -1,9 +1,10 @@
-import { ArrowLeft, AudioLines, Check, ChevronLeft, ChevronRight, Clock3, Eye, EyeOff, Pause, Play, Redo2, Search, Undo2, UserRound } from 'lucide-react'
+import { ArrowLeft, AudioLines, Check, ChevronLeft, ChevronRight, Clock3, Eye, EyeOff, Pause, Pencil, Play, Redo2, Search, Undo2, UserRound } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { errorText, exportJob, live, request, timestamp } from './api'
 import { useEdits } from './editing'
 import { Waveform } from './waveform'
-import { CueReview } from './cue-review'
+import { CaptionExportCheck, CueReview, useCueAudit } from './cue-review'
+import { CueTiming } from './cue-timing'
 import { useLocale } from './i18n'
 import { PickTranscript } from './jobs'
 import type { Detail, Format, Segment } from './types'
@@ -69,17 +70,21 @@ function EditableTranscript({ detail }: { detail: Detail }) {
   const [position, setPosition] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [flash, setFlash] = useState('')
+  const [pendingExport, setPendingExport] = useState<Format | null>(null)
+  const issues = useCueAudit(edit.segments)
   const [playerError, setPlayerError] = useState('')
   const [playing, setPlaying] = useState(false)
   const [follow, setFollow] = useState(false)
   const [rate, setRate] = useState(1)
-  const [loop, setLoop] = useState<Segment | null>(null)
+  const [loopId, setLoop] = useState<number | null>(null)
+  const [timingId, setTimingId] = useState<number | null>(null)
   const [mediaDuration, setMediaDuration] = useState(job.duration_ms ?? 0)
   const [preview, setPreview] = useState(detail.preview_ready)
   const [preparing, setPreparing] = useState(false)
   const player = useRef<HTMLMediaElement | null>(null)
   const activeCue = edit.segments.find((segment) => position >= segment.start_ms && position < segment.end_ms)
   const current = activeCue?.id ?? null
+  const loop = loopId === null ? null : edit.segments.find((item) => item.id === loopId)
   const term = query.trim().toLocaleLowerCase(locale)
   const shown = useMemo(() => term ? edit.segments.filter((segment) =>
     [segment.text, segment.speaker ?? '', showOriginal ? segment.original : ''].some((value) =>
@@ -87,14 +92,18 @@ function EditableTranscript({ detail }: { detail: Detail }) {
   const lastPage = Math.max(0, Math.ceil(shown.length / SEGMENTS_PER_PAGE) - 1)
   const visiblePage = Math.min(page, lastPage)
   const pageOffset = visiblePage * SEGMENTS_PER_PAGE
-  const visible = shown.slice(pageOffset, pageOffset + SEGMENTS_PER_PAGE)
+  const visible = useMemo(() => shown.slice(pageOffset, pageOffset + SEGMENTS_PER_PAGE), [shown, pageOffset])
   const track = edit.segments.length <= 512 ? edit.segments : visible
   const mediaSource = preview ? 'preview' : detail.original_playback ? 'original' : ''
   const source = mediaSource ? '/api/media/' + job.id + '/' + mediaSource : ''
   const isVideo = detail.video && !preview
 
   useEffect(() => {
-    if (!follow || !playing || current === null) return
+    if (timingId !== null && !visible.some((segment) => segment.id === timingId)) setTimingId(null)
+  }, [timingId, visible])
+
+  useEffect(() => {
+    if (!follow || !playing || current === null || timingId !== null) return
     const focused = document.activeElement
     if (focused?.closest('.transcript-panel')?.contains(focused) && focused.matches('input, textarea, [contenteditable="true"]')) return
     const index = shown.findIndex((segment) => segment.id === current)
@@ -103,7 +112,7 @@ function EditableTranscript({ detail }: { detail: Detail }) {
     setSelected(null)
     const frame = requestAnimationFrame(() => document.getElementById('segment-' + current)?.scrollIntoView({ block: 'nearest' }))
     return () => cancelAnimationFrame(frame)
-  }, [current, follow, playing, shown])
+  }, [current, follow, playing, shown, timingId])
 
   function seek(value: number, segment?: Segment) {
     if (player.current && player.current.readyState >= 1) player.current.currentTime = value / 1000
@@ -113,6 +122,20 @@ function EditableTranscript({ detail }: { detail: Detail }) {
       setSelected(segment.id)
       document.getElementById('segment-' + segment.id)?.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
     }
+  }
+
+  function closeTiming(id: number) {
+    setTimingId(null)
+    requestAnimationFrame(() => document.getElementById('edit-timing-' + id)?.focus())
+  }
+
+  function applyTiming(id: number, start: number, end: number) {
+    edit.change(id, { start_ms: start, end_ms: end })
+    const index = shown.filter((item) => item.id !== id &&
+      (item.start_ms < start || (item.start_ms === start && item.id < id))).length
+    setPage(Math.floor(index / SEGMENTS_PER_PAGE))
+    if (loopId === id && (position < start || position >= end)) setLoop(null)
+    closeTiming(id)
   }
 
   function jump(direction: -1 | 1) {
@@ -140,6 +163,18 @@ function EditableTranscript({ detail }: { detail: Detail }) {
     try { await request('/jobs/' + job.id + '/preview', { method: 'POST' }); setPreview(true) }
     catch (error) { setPlayerError(errorText(error)) }
     finally { setPreparing(false) }
+  }
+
+  function openCue(segment: Segment) {
+    setQuery('')
+    setPage(Math.floor(edit.segments.findIndex((item) => item.id === segment.id) / SEGMENTS_PER_PAGE))
+    seek(segment.start_ms, segment)
+    requestAnimationFrame(() => document.getElementById('segment-' + segment.id)?.querySelector('textarea')?.focus())
+  }
+
+  function chooseExport(format: Format) {
+    if ((format === 'srt' || format === 'vtt') && issues.length) setPendingExport(format)
+    else void download(format)
   }
 
   async function download(format: Format) {
@@ -171,7 +206,10 @@ function EditableTranscript({ detail }: { detail: Detail }) {
 
   return <div className="editor-layout">
     <PageTitle title={job.name} description={[job.detected_language && languageName(job.detected_language), timestamp(job.duration_ms ?? 0), edit.segments.length + ' ' + t('segments')].filter(Boolean).join(' · ')}
-      action={<ExportPicker onExport={(format) => void download(format)}/>}/>
+      action={<ExportPicker onExport={chooseExport}/>}/>
+    {pendingExport && <CaptionExportCheck format={pendingExport} issues={issues} close={() => setPendingExport(null)}
+      review={() => { setPendingExport(null); if (issues[0]) openCue(issues[0].segment) }}
+      proceed={() => { setPendingExport(null); void download(pendingExport) }}/>}
     <section className="panel player-panel" aria-label={t('playback')}>
       {source && (isVideo ? <div className="studio-video">
         <video className="video-player" {...playbackProps} controls ref={(node) => { player.current = node }}/>
@@ -199,7 +237,7 @@ function EditableTranscript({ detail }: { detail: Detail }) {
           onClick={() => {
             if (loop) { setLoop(null); return }
             const segment = edit.segments.find((item) => item.id === (selected ?? current))
-            if (segment) { setLoop(segment); seek(segment.start_ms) }
+            if (segment) { setLoop(segment.id); seek(segment.start_ms) }
           }}>{locale === 'es' ? 'Repetir segmento' : 'Loop segment'}{loop ? ' · ' + timestamp(loop.start_ms, true) : ''}</button>
         <button className="button small secondary" aria-pressed={follow} disabled={!source}
           onClick={() => setFollow(!follow)}>{locale === 'es' ? 'Seguir reproducción' : 'Follow playback'}</button>
@@ -225,12 +263,22 @@ function EditableTranscript({ detail }: { detail: Detail }) {
       {edit.error && <p className="notice error editor-notice" role="alert">{edit.error}</p>}
       {!shown.length ? <FilesEmpty text={edit.segments.length ? t('noJobs') : t('noSpeech')}/> : <ol className="segment-list">
         {visible.map((segment, index) => <li key={segment.id} id={'segment-' + segment.id} className={(current === segment.id || selected === segment.id) ? 'active-segment' : ''}>
-          <button className="cue-time mono" onClick={() => seek(segment.start_ms, segment)}><Clock3 size={14}/>{timestamp(segment.start_ms, true)}</button>
+          <div className="cue-clock">
+            <button className="cue-time mono" onClick={() => seek(segment.start_ms, segment)}><Clock3 size={14}/>{timestamp(segment.start_ms, true)}</button>
+            <button className="cue-edit-time" id={'edit-timing-' + segment.id} aria-expanded={timingId === segment.id}
+              aria-controls={timingId === segment.id ? 'cue-timing-' + segment.id : undefined}
+              disabled={!job.duration_ms}
+              onClick={() => timingId === segment.id ? closeTiming(segment.id) : setTimingId(segment.id)}>
+              <Pencil size={13}/>{locale === 'es' ? 'Ajustar tiempos' : 'Edit timing'}
+            </button>
+          </div>
           <div className="segment-body"><label className="speaker-input"><UserRound size={14}/><input aria-label={t('speaker') + ' ' + (pageOffset + index + 1)}
             placeholder={t('speakerPlaceholder')} value={segment.speaker ?? ''} maxLength={60} onChange={(event) => edit.change(segment.id, { speaker: event.target.value || null })}/></label>
             <textarea data-testid={'segment-input-' + segment.id} aria-label={t('segment') + ' ' + (pageOffset + index + 1)} rows={Math.min(5, Math.max(2, Math.ceil(segment.text.length / 95)))}
               value={segment.text} maxLength={8000} onChange={(event) => edit.change(segment.id, { text: event.target.value })}/>
-            {showOriginal && <blockquote>{segment.original}</blockquote>}</div>
+            {showOriginal && <blockquote>{segment.original}</blockquote>}
+            {timingId === segment.id && job.duration_ms != null && <CueTiming segment={segment} duration={job.duration_ms}
+              position={position} close={() => closeTiming(segment.id)} apply={(start, end) => applyTiming(segment.id, start, end)}/>}</div>
         </li>)}
       </ol>}
       {lastPage > 0 && <nav className="studio-page" aria-label={locale === 'es' ? 'Páginas de la transcripción' : 'Transcript pages'}>
@@ -241,12 +289,7 @@ function EditableTranscript({ detail }: { detail: Detail }) {
       <div className="editor-footer" aria-live="polite"><span>{edit.state === 'saved' && <Check size={15}/>} {t(edit.state)}</span>
         {edit.state === 'unsaved' && <button className="button small secondary" onClick={() => void edit.save()}>{t('save')}</button>}</div>
     </section>
-    <CueReview segments={edit.segments} active={activeCue} open={(segment) => {
-      setQuery('')
-      setPage(Math.floor(edit.segments.findIndex((item) => item.id === segment.id) / SEGMENTS_PER_PAGE))
-      seek(segment.start_ms, segment)
-      requestAnimationFrame(() => document.getElementById('segment-' + segment.id)?.querySelector('textarea')?.focus())
-    }}/>
+    <CueReview issues={issues} active={activeCue} open={openCue}/>
     </div>
   </div>
 }

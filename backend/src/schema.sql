@@ -29,6 +29,11 @@ CREATE TABLE IF NOT EXISTS segments (
     speaker TEXT
 );
 CREATE INDEX IF NOT EXISTS segments_job ON segments(job_id,start_ms,id);
+CREATE TABLE IF NOT EXISTS segment_original_timing (
+    segment_id INTEGER PRIMARY KEY REFERENCES segments(id) ON DELETE CASCADE,
+    start_ms INTEGER NOT NULL,
+    end_ms INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
