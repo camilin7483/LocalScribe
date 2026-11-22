@@ -1,0 +1,65 @@
+{
+  "same_thread_count": true,
+  "media": "session-30m.flac",
+  "duration_ms": 1800000,
+  "exact_segments": true,
+  "segment_count": 211,
+  "runs": [
+    {
+      "mode": "cli",
+      "elapsed_ms": 350384,
+      "reused": false,
+      "threads": 2,
+      "metrics": {
+        "cpu_ms": 687120,
+        "peak_rss_bytes": 169504768,
+        "stages": {
+          "cli_windows": 60,
+          "decode_ms": 3408,
+          "fallback_ms": 0,
+          "inference_ms": 346005,
+          "peak_child_tree_estimate_bytes": 169504768,
+          "persistent_windows": 0,
+          "probe_ms": 32,
+          "silence_scan_ms": 3,
+          "silent_windows": 0,
+          "worker_fallbacks": 0
+        },
+        "wall_ms": 349445,
+        "wer": null
+      }
+    },
+    {
+      "mode": "persistent",
+      "elapsed_ms": 375430,
+      "reused": false,
+      "threads": 2,
+      "metrics": {
+        "cpu_ms": 747170,
+        "peak_rss_bytes": 176521216,
+        "stages": {
+          "cli_windows": 0,
+          "decode_ms": 3636,
+          "fallback_ms": 0,
+          "inference_ms": 370816,
+          "peak_child_tree_estimate_bytes": 230461440,
+          "persistent_windows": 60,
+          "probe_ms": 34,
+          "silence_scan_ms": 0,
+          "silent_windows": 0,
+          "worker_fallbacks": 0
+        },
+        "wall_ms": 374486,
+        "wer": null
+      }
+    }
+  ],
+  "cli_sha256": "d8f608a101bef32a0689c247ddad296bf6a57d05a0d8e1bc4898397c3ad155bb",
+  "audio_sha256": "5a847237cae9740905e283643167c57a3529ed15337f51da4b8f40b4389dc824",
+  "forced_threads": 2,
+  "order": [
+    "cli",
+    "persistent"
+  ],
+  "trials_per_mode": 1
+}

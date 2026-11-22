@@ -22,7 +22,12 @@ axe-core 4.14.1 señaló una diferencia entre el texto visible y el nombre acces
 | Linux x86-64 | Extraje el tarball y ejecuté la aplicación estática en Arch. Pasaron Chromium, los cuatro análisis axe-core, FFmpeg, Whisper y la edición y exportación con la red aislada. |
 | Menú Linux | Validé la entrada con Desktop File Utils y lancé por GIO rutas con espacios, porcentaje, comillas, dólar, barra inversa y caracteres Unicode. La entrada también inició la alfa real con la red aislada y entregó la URL local al navegador de prueba. [Desktop Entry Specification](https://specifications.freedesktop.org/desktop-entry/latest/exec-variables.html) |
 | Ubuntu Base 24.04.5 | Verifiqué el SHA-256 de la imagen oficial. En un entorno limpio con red aislada arrancaron el servidor y Whisper y se sirvió el frontend. [Ubuntu Base](https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/) |
-| Windows x86-64 | Verifiqué y extraje el ZIP. En Wine 11.22 la aplicación anunció 0.2.0-alpha.1, seleccionó CPU (AVX2) y pasó la transcripción en español con FFmpeg, la validación de tiempos y cinco exportaciones. |
+| Windows x86-64 | Verifiqué y extraje el ZIP. En Wine 11.22 la aplicación anunció 0.2.0-alpha.1, seleccionó CPU (AVX2) y pasó la transcripción en español con FFmpeg, la validación de tiempos y cinco exportaciones. El flujo de Chromium contra el servidor Windows también pasó en Wine, con forma de onda, edición de tiempos, aviso de exportación y paginación. |
 | Motor de Windows | La compilación previa etiquetada AVX2 ejecutaba instrucciones genéricas. El motor recompilado informa AVX2, FMA y BMI2 en tiempo de ejecución. En dos muestras y cuatro hilos produjo exactamente el mismo texto y los mismos tiempos que el binario previo. [Comparación en Wine](measurements/0.2-windows-avx2.json) |
 
 Los archivos locales de la alfa contienen motores CPU. El protocolo persistente y Vulkan están disponibles en compilaciones de laboratorio desde el código fuente. Quedan pendientes los instaladores nativos de Windows 10 y 11, el escritorio de Ubuntu en una instalación limpia, una ejecución del workflow publicado y la firma de distribución.
+
+
+## Demo
+
+El MP4 se grabó en la alfa real. Muestra importación, cola, hardware, forma de onda, ajuste de tiempos, descarga SRT y las funciones de resumen, traducción y hablantes respaldadas por Ollama y sherpa-onnx locales. FFprobe contó 900 fotogramas H.264 a 30 FPS, 1920 × 1080 y una duración de 30,000 s. La grabación registró únicamente peticiones del navegador a loopback.

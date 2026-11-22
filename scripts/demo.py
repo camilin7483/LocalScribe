@@ -15,6 +15,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tests"))
 from browser import browser_path, drop_file, nav
 from local_support import FIXTURES, TestServer, arguments
+from urllib.parse import urlsplit
 from playwright.sync_api import expect, sync_playwright
 
 FPS = 30
@@ -82,8 +83,7 @@ def real_chapters(server, page, directory, include_ai, windows):
     def import_media():
         drop_file(page, FIXTURES / "es.wav", RECORDING, show_drag=True)
         expect(page.get_by_text(RECORDING, exact=True)).to_be_visible()
-        if not page.get_by_role("button", name="Iniciar transcripción").is_enabled():
-            page.get_by_role("combobox", name="Modelo Whisper").select_option("base-q5_1")
+        page.get_by_role("combobox", name="Modelo Whisper").select_option("base-q5_1")
         page.wait_for_timeout(420)
         page.get_by_role("button", name="Iniciar transcripción").click()
         expect(page.get_by_role("heading", name="Cola de procesamiento", exact=True)).to_be_visible()
@@ -102,7 +102,16 @@ def real_chapters(server, page, directory, include_ai, windows):
     page.goto(editor)
     expect(page.get_by_role("textbox", name="Segmento 1", exact=True)).to_be_visible()
     page.wait_for_function("() => document.querySelector('audio')?.readyState >= 1")
-    transcript = shot(page, directory, "transcript", 550, lambda: page.locator(".cue-time").last.click())
+    expect(page.get_by_test_id("studio-waveform")).to_be_visible()
+
+    def play_caption():
+        page.locator(".cue-time").first.click()
+        page.get_by_role("button", name="Reproducir", exact=True).click()
+        expect(page.locator(".studio-active-cue")).to_be_visible()
+        page.wait_for_timeout(450)
+        page.get_by_role("button", name="Pausar", exact=True).click()
+
+    transcript = shot(page, directory, "transcript", 350, play_caption)
 
     if include_ai:
         nav(page, "Privacidad")
@@ -139,6 +148,15 @@ def real_chapters(server, page, directory, include_ai, windows):
     expect(first_line).to_be_visible()
 
     def edit_and_export():
+        first_cue = detail["segments"][0]
+        cue = page.locator(f"#segment-{first_cue['id']}")
+        cue.get_by_role("button", name="Ajustar tiempos").click()
+        start = cue.get_by_role("textbox", name="Inicio", exact=True)
+        moved = first_cue["start_ms"] + 120
+        clock = f"{moved // 3600000:02d}:{moved // 60000 % 60:02d}:{moved // 1000 % 60:02d}.{moved % 1000:03d}"
+        start.fill(clock)
+        page.wait_for_timeout(450)
+        cue.get_by_role("button", name="Aplicar tiempos").click()
         last = page.locator(".segment-list textarea").last
         before = last.input_value()
         fixed = before.replace("A un activo", "Cada archivo")
@@ -153,8 +171,11 @@ def real_chapters(server, page, directory, include_ai, windows):
         expect(page.get_by_text("Guardado en este equipo", exact=True)).to_be_visible()
         with page.expect_download() as download:
             page.get_by_role("combobox", name="Exportar").select_option("srt")
+            review = page.get_by_role("dialog", name="Revisar antes de exportar")
+            if review.is_visible():
+                review.get_by_role("button", name="Exportar SRT").click()
         output = pathlib.Path(download.value.path()).read_text(encoding="utf-8")
-        assert " --> " in output and "subtítulo" in output.lower(), output
+        assert clock.replace(".", ",") + " --> " in output and "subtítulo" in output.lower(), output
         expect(page.get_by_text("Exportación descargada · SRT")).to_be_visible()
     edited = shot(page, directory, "edit", 500, edit_and_export)
 
@@ -236,7 +257,11 @@ def main():
             page = browser.new_page(locale="es-CO", viewport={"width": WIDTH, "height": HEIGHT}, device_scale_factor=1,
                                     reduced_motion="reduce", accept_downloads=True)
             try:
+                external = []
+                page.on("request", lambda request: external.append(request.url)
+                        if urlsplit(request.url).hostname not in (None, "127.0.0.1") else None)
                 chapters = real_chapters(server, page, directory, args.ai, args.windows)
+                assert not external, external
             finally:
                 browser.close()
         render(chapters, directory, output, args.font)

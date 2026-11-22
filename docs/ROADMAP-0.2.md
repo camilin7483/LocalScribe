@@ -109,3 +109,8 @@ Los dos modos completaron la sesión de 30 minutos y guardaron 60 ventanas cada 
 
 
 Un control de 150 s fijó dos hilos en ambos modos. Las cinco ventanas y los 24 segmentos coincidieron. La ejecución aislada tardó 25,924 s y la persistente 26,469 s. El incremento estimado de RSS fue de 3,5%. Este caso corto separa los efectos del número de hilos, con una sola corrida por modo. [Control de 150 s](measurements/0.2-worker-fixed-short.json)
+
+
+La repetición controlada de 30 minutos fijó dos hilos y usó el mismo ejecutable y archivo. Las 60 ventanas y los 211 segmentos coincidieron en texto y marcas de tiempo. El CLI tardó 350,384 s y el proceso persistente 375,430 s, un 7,1% más. El pico estimado de los procesos hijos pasó de 162 a 220 MiB. Esta corrida mantiene al CLI como predeterminado frente a la meta de velocidad y memoria. [Control de 30 minutos](measurements/0.2-worker-fixed-long.json)
+
+La alfa omite ventanas de silencio digital exacto. En una pista de seis minutos con habla al inicio y al final, tres corridas por versión alternaron la 0.1 y la alfa con Base y dos hilos en el mismo motor. La mediana de extremo a extremo bajó de 12,149 s a 8,700 s, una reducción del 28,4%. Se omitieron diez ventanas en cada corrida de la alfa y los cuatro segmentos fueron idénticos en las seis ejecuciones. El resultado corresponde a silencio digital. [Comparación entre versiones](measurements/0.2-silence-release.json)
