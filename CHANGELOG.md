@@ -5,6 +5,7 @@
 - Add local audio waveform, playback speed, looping, caption following and current caption preview.
 - Add caption timing edits, original timing recovery and export review for reading speed and overlapping cues.
 - Page long transcripts and preserve full-text search across pages.
+- Verify AVX2 in the optimized Windows engine and support Linux menu launch from paths containing spaces and punctuation.
 - Prefer Base in the automatic Eco profile when it fits the memory budget. Preserve explicit model selection.
 - Add production-stage measurements and source-build experiments for persistent inference and Vulkan.
 

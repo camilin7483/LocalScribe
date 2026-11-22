@@ -39,7 +39,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg desktop-file-utils libglib2.0-bin
       - name: Windows runtime
         if: runner.os == 'Windows'
         shell: pwsh
@@ -90,6 +90,9 @@ jobs:
             python -m zipfile -e "${archive[0]}" .release/extracted
           fi
           package=(.release/extracted/LocalScribe-*)
+          if [[ "${{ matrix.platform }}" == "linux" ]]; then
+            python tests/desktop_menu.py "${package[0]}"
+          fi
           python tests/integration.py --binary "${package[0]}/${{ matrix.executable }}" --models .release/models --full
           python tests/browser.py --binary "${package[0]}/${{ matrix.executable }}" --models .release/models
           python tests/worker.py --binary "${package[0]}/${{ matrix.executable }}" --models .release/models --interrupt
@@ -121,7 +124,6 @@ jobs:
           tag="$GITHUB_REF_NAME"
           version=$(awk -F'"' '/^version = /{print $2; exit}' backend/Cargo.toml)
           test "$tag" = "v$version"
-          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
           cd release-assets
           sha256sum LocalScribe-* > SHA256SUMS.txt
           gh release create "$tag" --verify-tag --draft --prerelease --title "LocalScribe $version" --notes-file ../CHANGELOG.md ./*

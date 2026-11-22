@@ -20,6 +20,8 @@ axe-core 4.14.1 señaló una diferencia entre el texto visible y el nombre acces
 | Distribución local | Control ejecutado |
 |---|---|
 | Linux x86-64 | Extraje el tarball y ejecuté la aplicación estática en Arch. Pasaron Chromium, los cuatro análisis axe-core, FFmpeg, Whisper y la edición y exportación con la red aislada. |
+| Menú Linux | Validé la entrada con Desktop File Utils y lancé por GIO rutas con espacios, porcentaje, comillas, dólar, barra inversa y caracteres Unicode. La entrada también inició la alfa real con la red aislada y entregó la URL local al navegador de prueba. [Desktop Entry Specification](https://specifications.freedesktop.org/desktop-entry/latest/exec-variables.html) |
+| Ubuntu Base 24.04.5 | Verifiqué el SHA-256 de la imagen oficial. En un entorno limpio con red aislada arrancaron el servidor y Whisper y se sirvió el frontend. [Ubuntu Base](https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/) |
 | Windows x86-64 | Verifiqué y extraje el ZIP. En Wine 11.22 la aplicación anunció 0.2.0-alpha.1, seleccionó CPU (AVX2) y pasó la transcripción en español con FFmpeg, la validación de tiempos y cinco exportaciones. |
 | Motor de Windows | La compilación previa etiquetada AVX2 ejecutaba instrucciones genéricas. El motor recompilado informa AVX2, FMA y BMI2 en tiempo de ejecución. En dos muestras y cuatro hilos produjo exactamente el mismo texto y los mismos tiempos que el binario previo. [Comparación en Wine](measurements/0.2-windows-avx2.json) |
 

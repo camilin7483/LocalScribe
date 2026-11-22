@@ -1,0 +1,57 @@
+{
+  "same_thread_count": true,
+  "media": "session-150s.flac",
+  "duration_ms": 150000,
+  "exact_segments": true,
+  "segment_count": 24,
+  "runs": [
+    {
+      "mode": "cli",
+      "elapsed_ms": 25924,
+      "reused": false,
+      "threads": 2,
+      "metrics": {
+        "cpu_ms": 49280,
+        "peak_rss_bytes": 166948864,
+        "stages": {
+          "cli_windows": 5,
+          "decode_ms": 226,
+          "fallback_ms": 0,
+          "inference_ms": 24927,
+          "peak_child_tree_estimate_bytes": 166948864,
+          "persistent_windows": 0,
+          "probe_ms": 43,
+          "silence_scan_ms": 0,
+          "silent_windows": 0,
+          "worker_fallbacks": 0
+        },
+        "wall_ms": 25196,
+        "wer": null
+      }
+    },
+    {
+      "mode": "persistent",
+      "elapsed_ms": 26469,
+      "reused": false,
+      "threads": 2,
+      "metrics": {
+        "cpu_ms": 50960,
+        "peak_rss_bytes": 168894464,
+        "stages": {
+          "cli_windows": 0,
+          "decode_ms": 231,
+          "fallback_ms": 0,
+          "inference_ms": 25435,
+          "peak_child_tree_estimate_bytes": 172720128,
+          "persistent_windows": 5,
+          "probe_ms": 33,
+          "silence_scan_ms": 0,
+          "silent_windows": 0,
+          "worker_fallbacks": 0
+        },
+        "wall_ms": 25699,
+        "wer": null
+      }
+    }
+  ]
+}
