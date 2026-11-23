@@ -56,8 +56,8 @@ def retrieve(directory):
     return source
 
 
-def whisper(source, target, variant, jobs):
-    build = target / ("whisper-" + variant)
+def whisper(source, target, variant, jobs, windows_compilers=None):
+    build = target / ("whisper-" + variant + ("-llvm-mingw" if windows_compilers else ""))
     flags = [
         "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=OFF", "-DGGML_NATIVE=OFF",
         "-DGGML_OPENMP=OFF", "-DWHISPER_BUILD_TESTS=OFF", "-DWHISPER_BUILD_SERVER=OFF",
@@ -67,8 +67,10 @@ def whisper(source, target, variant, jobs):
     if platform.machine().lower() in ("amd64", "x86_64"):
         instruction_set = "OFF" if variant == "generic" else "ON"
         flags += [f"-DGGML_{feature}={instruction_set}" for feature in ("AVX", "AVX2", "SSE42", "F16C", "FMA", "BMI2")]
-    if os.name == "nt":
-        flags.append("-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded")
+    if windows_compilers:
+        cc, cxx = windows_compilers
+        flags += ["-G", "Ninja", f"-DCMAKE_C_COMPILER={cc.as_posix()}",
+                  f"-DCMAKE_CXX_COMPILER={cxx.as_posix()}", "-DCMAKE_EXE_LINKER_FLAGS=-static"]
     call("cmake", "-S", source, "-B", build, *flags)
     call("cmake", "--build", build, "--config", "Release", "--target", "whisper-cli", "--parallel", jobs)
     matches = sorted((build / "bin").rglob("whisper-cli" + EXE))
@@ -83,6 +85,13 @@ def main():
     parser.add_argument("--jobs", type=int, default=4)
     parser.add_argument("--vulkan-lab", action="store_true", help="Build an additional Vulkan CLI for benchmarks.")
     args = parser.parse_args()
+    windows_compilers = None
+    if os.name == "nt":
+        cc = shutil.which("x86_64-w64-mingw32-clang")
+        cxx = shutil.which("x86_64-w64-mingw32-clang++")
+        if not cc or not cxx or not shutil.which("ninja"):
+            raise RuntimeError("Windows builds require LLVM-MinGW x64 and Ninja on PATH.")
+        windows_compilers = (pathlib.Path(cc), pathlib.Path(cxx))
     build = args.dir.resolve()
     stage = build / "native"
     stage.mkdir(parents=True, exist_ok=True)
@@ -95,12 +104,14 @@ def main():
     shutil.copy2(build / "rust" / "release" / ("localscribe" + EXE), stage)
     src = retrieve(build / "vendor")
     for variant in ("generic", "avx2"):
-        result = whisper(src, build, variant, args.jobs)
+        result = whisper(src, build, variant, args.jobs, windows_compilers)
         target_name = ("whisper-cli" if variant == "generic" else "whisper-cli-avx2") + EXE
         shutil.copy2(result, stage / target_name)
     shutil.copy2(src / "LICENSE", stage / "whisper.cpp-LICENSE.txt")
+    if windows_compilers:
+        shutil.copy2(windows_compilers[0].parent.parent / "LICENSE.TXT", stage / "llvm-mingw-LICENSE.txt")
     if args.vulkan_lab:
-        result = whisper(src, build, "vulkan", args.jobs)
+        result = whisper(src, build, "vulkan", args.jobs, windows_compilers)
         shutil.copy2(result, stage / ("whisper-cli-vulkan" + EXE))
 
 

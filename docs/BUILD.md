@@ -1,6 +1,6 @@
 # Build from source
 
-Use Rust 1.89 or newer, Node.js 22.12+ or 24 LTS, npm, Python 3.12+, CMake, a C/C++ compiler and FFmpeg with FFprobe and MP3 encoding. On Windows install Visual Studio Build Tools with the Desktop development with C++ workload. On Linux install GCC or Clang and Make or Ninja. Python builds the packages and runs the tests. The installed core requires no Python, Node.js or Rust.
+Use Rust 1.89 or newer, Node.js 22.12+ or 24 LTS, npm, Python 3.12+, CMake, a C/C++ compiler and FFmpeg with FFprobe and MP3 encoding. On Windows install Visual Studio Build Tools for Rust and put Ninja and the x64 UCRT build of LLVM-MinGW on PATH. The Windows workflow pins LLVM-MinGW 20261117 for the Whisper executables. On Linux install GCC or Clang and Make or Ninja. Python builds the packages and runs the tests. The installed core requires no Python, Node.js or Rust.
 
 Run from the source directory.
 
@@ -47,7 +47,7 @@ The GitHub Actions workflow builds and smoke-tests the extracted Ubuntu and Wind
 
 ## Toolchains for the accompanying local artifacts
 
-The Linux archive uses an official Rust 1.100.0 x86-64 musl target and CPU whisper.cpp linked statically using Zig 0.15.2. The Windows ZIP uses the official Rust 1.100.0 gnullvm target and LLVM-MinGW UCRT 20261117. It was smoke-tested with external FFmpeg 9.1 in Wine 11.22. The native CI builds use the Linux runner's system toolchain and Windows MSVC. All variants use the same frontend lockfile, backend lockfile and pinned whisper.cpp source.
+The Linux archive uses an official Rust 1.100.0 x86-64 musl target and CPU whisper.cpp linked statically using Zig 0.15.2. The Windows ZIP uses the official Rust 1.100.0 gnullvm target and LLVM-MinGW UCRT 20261117. It was smoke-tested with external FFmpeg 9.1 in Wine 11.22. CI builds Whisper with the system compiler on Linux and LLVM-MinGW UCRT 20261117 on Windows. The native Windows workflow uses Rust's default MSVC target for the server. All variants use the same frontend lockfile, backend lockfile and pinned whisper.cpp source.
 
 ### Experimental persistent Whisper worker
 

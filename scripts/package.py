@@ -39,6 +39,9 @@ def main():
             shutil.copy2(file, package / file.name)
         licenses = package / "third-party-licenses"
         collect(licenses, args.target_triple)
+        toolchain_license = args.native / "llvm-mingw-LICENSE.txt"
+        if args.platform == "windows" and toolchain_license.is_file():
+            shutil.copy2(toolchain_license, licenses / toolchain_license.name)
         for file in args.extra_license:
             shutil.copy2(file, licenses / file.name)
         with tempfile.TemporaryDirectory(dir=args.output) as staging:
