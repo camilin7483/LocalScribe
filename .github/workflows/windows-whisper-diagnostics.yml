@@ -1,0 +1,54 @@
+name: Windows Whisper diagnostics
+on:
+  push:
+    branches: [diagnostics/windows-whisper]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: windows-2025
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Load verified release and fixtures
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v0.2.0-alpha.1 -R "$env:GITHUB_REPOSITORY" -p '*windows-x86_64.zip' -D windows-diagnostic
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to fetch release.' }
+          python -m zipfile -e windows-diagnostic/LocalScribe-0.2.0-alpha.1-windows-x86_64.zip windows-diagnostic
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to extract release.' }
+          python scripts/fetch_models.py windows-diagnostic/models
+      - name: Measure Whisper directly on the native runner
+        shell: bash
+        run: |
+          python -u - <<'PY'
+          import json, os, subprocess, time
+          from pathlib import Path
+          root=Path('windows-diagnostic')
+          models=root/'models'
+          cli=root/'LocalScribe-0.2.0-alpha.1-windows-x86_64'/'whisper-cli-avx2.exe'
+          print('available CPUs:',os.cpu_count())
+          shared=[str(cli),'-m',str(models/'ggml-tiny-q5_1.bin'),'-f','tests/fixtures/en.wav','-ng','-l','en','-t','1','-bs','1','-bo','1','-oj']
+          success=[]
+          for name, extra in [('without-vad',[]),('with-vad',['--vad','-vm',str(models/'ggml-silero-v6.2.0.bin'),'-vsd','300'])]:
+              out=root/name
+              start=time.monotonic()
+              try:
+                  run=subprocess.run(shared+extra+['-of',str(out)],capture_output=True,timeout=80)
+                  print(name,'exit',run.returncode,'seconds',round(time.monotonic()-start,2))
+                  print(run.stderr.decode(errors='replace')[-5000:])
+                  if run.returncode==0:
+                      doc=json.loads(out.with_suffix('.json').read_text(encoding='utf-8'))
+                      if doc.get('transcription'): success.append(name)
+              except subprocess.TimeoutExpired as err:
+                  print(name,'timed out',round(time.monotonic()-start,2))
+                  print((err.stderr or b'').decode(errors='replace')[-5000:])
+          print('Successful inference paths:', success)
+          PY
