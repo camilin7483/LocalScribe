@@ -10,7 +10,7 @@ cargo test --locked
 python scripts/fetch_models.py .release/models
 ```
 
-The build verifies the whisper.cpp v1.9.5 source archive and builds a generic CPU engine and an AVX2 variant. It adds the standard `<algorithm>` include to the vendored example for libc++ compatibility. The browser assets are built in `frontend/dist`. For development, run that frontend build alongside the backend.
+The build verifies the whisper.cpp v1.9.5 source archive and builds a generic CPU engine and an AVX2 variant. It adds the standard `<algorithm>` include to the vendored example for libc++ compatibility. On Windows, the patched Whisper build runs Silero VAD on one thread to avoid a stall reproduced on a two-CPU Windows runner. Whisper decoding still uses the selected profile's thread count. The browser assets are built in `frontend/dist`. For development, run that frontend build alongside the backend.
 
 ```sh
 npm --prefix frontend ci --ignore-scripts

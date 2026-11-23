@@ -22,6 +22,28 @@ def call(*args, cwd=ROOT):
     subprocess.run([str(arg) for arg in args], cwd=cwd, check=True)
 
 
+def limit_windows_vad(source):
+    path = source / "src" / "whisper.cpp"
+    content = path.read_text(encoding="utf-8")
+    original = (
+        "        struct whisper_vad_context_params vad_ctx_params = whisper_vad_default_context_params();\n"
+        "        struct whisper_vad_context * vctx = whisper_vad_init_from_file_with_params"
+    )
+    patched = (
+        "        struct whisper_vad_context_params vad_ctx_params = whisper_vad_default_context_params();\n"
+        "#if defined(_WIN32)\n"
+        "        // Silero's small graph can stall with a contended Windows thread pool.\n"
+        "        vad_ctx_params.n_threads = 1;\n"
+        "#endif\n"
+        "        struct whisper_vad_context * vctx = whisper_vad_init_from_file_with_params"
+    )
+    if patched in content:
+        return
+    if content.count(original) != 1:
+        raise RuntimeError("Pinned whisper.cpp VAD initialization changed.")
+    path.write_text(content.replace(original, patched), encoding="utf-8")
+
+
 def retrieve(directory):
     source = directory / f"whisper.cpp-{VERSION}"
     directory.mkdir(parents=True, exist_ok=True)
@@ -43,6 +65,7 @@ def retrieve(directory):
     if b"#include <algorithm>" not in content:
         common.write_bytes(b"#include <algorithm>\n" + content)
     add_worker(source / "examples" / "cli" / "cli.cpp")
+    limit_windows_vad(source)
     # Vulkan's generated target uses SPIR-V headers. Propagate the
     # imported include path when the SDK is installed outside /usr.
     vulkan = source / "ggml" / "src" / "ggml-vulkan" / "CMakeLists.txt"
